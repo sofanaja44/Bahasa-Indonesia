@@ -14,18 +14,28 @@ tampilkan "Halo Dunia!"
 buat nama = "Budi"
 buat umur = 20
 
-# Kondisi
+# Kondisi (Cara Standar/Simbol)
 jika umur >= 18:
-    tampilkan f"{nama} sudah dewasa"
-selainnya:
-    tampilkan f"{nama} masih anak-anak"
+    tampilkan format"{nama} sudah dewasa"
 
-# Fungsi
+# Kondisi (Cara Natural/Bahasa)
+# Anda bebas memakai kata-kata agar kode terbaca seperti cerita!
+atau jika umur tidak kurang dari 18:
+    tampilkan format"{nama} sudah dewasa"
+selainnya:
+    tampilkan format"{nama} masih anak-anak"
+
+# Fungsi & Aritmatika Natural
 fungsi sapa(nama):
-    tampilkan "Halo, " + nama + "!"
+    tampilkan "Halo, " ditambah nama ditambah "!"
 
 sapa("Siti")
 ```
+
+### Opsi Penulisan Kode Fleksibel
+Bahasa Indonesia mendukung **Dua Gaya Penulisan**:
+1. **Gaya Simbolik (Matematis)**: Menggunakan `+`, `-`, `*`, `/`, `==`, `>=`, `<=`, dsb. Cocok bagi yang sudah terbiasa dengan bahasa pemrograman konvensional.
+2. **Gaya Natural (Bercerita)**: Menggunakan kata hubung seperti `ditambah`, `dikurang`, `dikali`, `dibagi`, `sama dengan`, `tidak kurang dari`, `sisa bagi`, dan `pangkat`. Format *string* juga menggunakan `format"..."` alih-alih `f"..."`. Sangat cocok digunakan untuk mengajar murid pemula agar logikanya lebih mudah dicerna.
 
 ## Menjalankan
 
