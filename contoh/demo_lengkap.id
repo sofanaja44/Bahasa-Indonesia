@@ -1,0 +1,77 @@
+# ============================================
+# Contoh Program Bahasa Indonesia
+# Mendemonstrasikan fitur utama bahasa
+# ============================================
+
+# --- Variabel dan Konstanta ---
+buat nama = "Programmer Indonesia"
+tetap VERSI = 1.0
+tampilkan format"Selamat datang, {nama}!"
+tampilkan format"Versi: {VERSI}"
+
+# --- Aritmatika ---
+buat a = 15
+buat b = 4
+tampilkan format"{a} ditambah {b} = {a ditambah b}"
+tampilkan format"{a} dikali {b} = {a dikali b}"
+tampilkan format"{a} pangkat {b} = {a pangkat b}"
+
+# --- Kondisi ---
+buat nilai = 85
+jika nilai tidak kurang dari 90:
+    tampilkan "Predikat: A (Sangat Baik)"
+atau jika nilai tidak kurang dari 80:
+    tampilkan "Predikat: B (Baik)"
+atau jika nilai tidak kurang dari 70:
+    tampilkan "Predikat: C (Cukup)"
+selainnya:
+    tampilkan "Predikat: D (Kurang)"
+
+# --- Perulangan ---
+tampilkan "Bilangan genap 1-10:"
+untuk angka dari 1 sampai 10:
+    jika angka sisa bagi 2 sama dengan 0:
+        tampilkan format"  {angka}"
+
+# --- Fungsi ---
+fungsi faktorial(angka):
+    jika angka tidak lebih dari 1:
+        kembalikan 1
+    kembalikan angka dikali faktorial(angka dikurang 1)
+
+tampilkan format"Faktorial 7 = {faktorial(7)}"
+
+# --- Daftar ---
+buat buah = ["Apel", "Jeruk", "Mangga", "Durian"]
+tampilkan "Daftar buah:"
+untuk setiap item_buah dalam buah:
+    tampilkan format"  - {item_buah}"
+
+buah.tambahkan("Rambutan")
+tampilkan format"Setelah ditambah: {panjang(buah)} buah"
+
+# --- Kamus ---
+buat profil = {"nama": "Budi", "umur": 25, "kota": "Jakarta"}
+tampilkan format"Nama: {profil['nama']}, Kota: {profil['kota']}"
+
+# --- OOP ---
+kelas Hewan:
+    fungsi inisialisasi(diri, nama, suara):
+        diri.nama = nama
+        diri.suara = suara
+
+    fungsi bicara(diri):
+        kembalikan format"{diri.nama} berkata: {diri.suara}!"
+
+buat kucing = Hewan("Kucing", "Meong")
+buat anjing = Hewan("Anjing", "Guk")
+tampilkan kucing.bicara()
+tampilkan anjing.bicara()
+
+# --- Error Handling ---
+coba:
+    buat hasil = 10 dibagi 0
+tangkap sebagai error:
+    tampilkan format"Error ditangkap: {error}"
+
+tampilkan "Program selesai!"
