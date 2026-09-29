@@ -17,6 +17,9 @@ class TokenType(Enum):
     # --- Identifier ---
     IDENTIFIER = auto()      # nama_variabel
 
+    # --- Nilai waktu saat ini ---
+    WAKTU_SEKARANG = auto()  # jam sekarang / menit sekarang / detik sekarang / waktu sekarang
+
     # --- Kata kunci deklarasi ---
     BUAT = auto()            # buat (deklarasi variabel)
     TETAP = auto()           # tetap (konstanta)
@@ -260,6 +263,12 @@ FRASA_KATA_KUNCI = {
 
     # Keberadaan: "x tidak ada dalam daftar"
     ("tidak", "ada"): TokenType.TIDAK_ADA,
+
+    # Waktu saat ini, dibaca setiap kali dipakai: "jika jam sekarang kurang dari 11"
+    ("jam", "sekarang"): TokenType.WAKTU_SEKARANG,
+    ("menit", "sekarang"): TokenType.WAKTU_SEKARANG,
+    ("detik", "sekarang"): TokenType.WAKTU_SEKARANG,
+    ("waktu", "sekarang"): TokenType.WAKTU_SEKARANG,
 
     # Aritmatika
     ("sisa", "bagi"): TokenType.SISA_BAGI,

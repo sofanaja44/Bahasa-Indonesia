@@ -117,6 +117,14 @@ Kata `dari` juga boleh ditulis `daripada` (`lebih besar daripada`), dan `dalam` 
 | `pangkat` · `dipangkatkan` | `**` |
 | `dan` · `atau` · `bukan` / `tidak` | logika |
 
+### Waktu
+
+| Gaya natural | Arti |
+|---|---|
+| `jam sekarang` · `menit sekarang` · `detik sekarang` | angka waktu saat ini, mis. `jika jam sekarang kurang dari 11` |
+| `waktu sekarang` | teks jam digital, mis. `"09:35:38"` |
+| `tunggu 1 detik` · `tunggu 500 milidetik` · `tunggu 2 menit` | berhenti sejenak (tanpa satuan berarti detik) |
+
 ### Alur program
 
 | Gaya natural | Arti |

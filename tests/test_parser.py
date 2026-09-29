@@ -698,6 +698,20 @@ class TestGayaNaturalPerulangan:
     def test_selama_lakukan(self):
         assert isinstance(ast("selama x kurang dari 3, lakukan:\n    x += 1").pernyataan[0], NodeSelama)
 
+    def test_tunggu_detik(self):
+        node = ast("tunggu 2 menit").pernyataan[0]
+        assert isinstance(node, NodeTunggu)
+        assert node.lama.nilai == 2
+        assert node.faktor == 60
+
+    def test_tunggu_sebagai_panggilan_fungsi(self):
+        assert isinstance(ast("tunggu(1)").pernyataan[0], NodePanggilFungsi)
+
+    def test_waktu_sekarang_sebagai_nilai(self):
+        node = ast("jika detik sekarang habis dibagi 2: tampilkan 1").pernyataan[0]
+        assert isinstance(node.kondisi.kiri.kiri, NodeWaktuSekarang)
+        assert node.kondisi.kiri.kiri.bagian == "detik"
+
     def test_untuk_setiap_di_dalam(self):
         assert isinstance(ast("untuk setiap b di dalam buah, tampilkan b").pernyataan[0], NodeUntukSetiap)
 

@@ -33,9 +33,8 @@ def daftar_fungsi_bawaan() -> dict:
         "jumlah": lambda x: sum(x.elemen if isinstance(x, BKDaftar) else x),
         "diurutkan": lambda x: BKDaftar(sorted(x.elemen if isinstance(x, BKDaftar) else x)),
         "dibalik": lambda x: BKDaftar(list(reversed(x.elemen if isinstance(x, BKDaftar) else x))),
-        # Waktu
-        "waktu_sekarang": _waktu_sekarang,
-        "tunggu": _tunggu,
+        # Waktu (bentuk natural: "tunggu 1 detik")
+        "tunggu": lambda detik: tunggu(detik),
         # Pesan kesalahan untuk 'lempar': lempar Kesalahan("Pembagi tidak boleh nol!")
         "Kesalahan": _kesalahan,
         "Error": _kesalahan,
@@ -74,19 +73,25 @@ def _kesalahan(pesan=""):
     return _ke_teks(pesan)
 
 
-def _waktu_sekarang():
-    """Waktu saat ini sebagai kamus: {"jam": .., "menit": .., "detik": ..}."""
+def baca_waktu(bagian: str):
+    """Nilai 'jam/menit/detik sekarang' (angka) atau 'waktu sekarang' (teks "JJ:MM:DD")."""
     sekarang = datetime.now()
-    return BKKamus({"jam": sekarang.hour, "menit": sekarang.minute, "detik": sekarang.second})
+    if bagian == "jam":
+        return sekarang.hour
+    if bagian == "menit":
+        return sekarang.minute
+    if bagian == "detik":
+        return sekarang.second
+    return sekarang.strftime("%H:%M:%S")
 
 
-def _tunggu(detik):
-    """Berhenti sejenak selama beberapa detik."""
-    if isinstance(detik, bool) or not isinstance(detik, (int, float)):
-        raise ValueError("tunggu() membutuhkan angka, yaitu lama menunggu dalam detik")
-    if detik < 0:
+def tunggu(lama, faktor=1):
+    """Berhenti sejenak selama `lama` × `faktor` detik."""
+    if isinstance(lama, bool) or not isinstance(lama, (int, float)):
+        raise ValueError(f"'tunggu' membutuhkan angka sebagai lamanya menunggu, bukan '{_ke_teks(lama)}'")
+    if lama < 0:
         raise ValueError("Lama menunggu tidak boleh negatif")
-    time.sleep(detik)
+    time.sleep(lama * faktor)
 
 
 def _masukan(prompt=""):

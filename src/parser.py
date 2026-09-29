@@ -20,9 +20,9 @@ from src.lexer import Token
 from src.errors import KesalahanSintaks
 from src.ast_nodes import (
     NodeProgram, NodeAngka, NodeTeks, NodeTeksFormat, NodeLogika, NodeKosong,
-    NodeIdentifier, NodeOperasiBiner, NodeOperasiUnari,
+    NodeIdentifier, NodeWaktuSekarang, NodeOperasiBiner, NodeOperasiUnari,
     NodeDeklarasiVariabel, NodeKonstanta, NodePenugasan, NodePenugasanGabungan,
-    NodeTambahkan, NodeTampilkan, NodeJika, NodePilih, NodeSelama, NodeUntuk,
+    NodeTambahkan, NodeTampilkan, NodeTunggu, NodeJika, NodePilih, NodeSelama, NodeUntuk,
     NodeUntukSetiap, NodeUlangi, NodeUlangiKali, NodeBerhenti, NodeLewati,
     NodeFungsi, NodeFungsiAnonim, NodePanggilFungsi, NodeKembalikan, NodeDaftar,
     NodeKamus, NodeAksesDaftar, NodeIrisanDaftar, NodeAksesAtribut,
@@ -358,15 +358,36 @@ class Parser:
 
     # Token yang pasti memulai sebuah nilai dan tidak mungkin melanjutkan ekspresi
     _AWAL_NILAI = (
-        TokenType.IDENTIFIER, TokenType.DIRI, TokenType.SUPER, TokenType.ANGKA,
+        TokenType.IDENTIFIER, TokenType.WAKTU_SEKARANG, TokenType.DIRI, TokenType.SUPER, TokenType.ANGKA,
         TokenType.DESIMAL, TokenType.TEKS, TokenType.TEKS_FORMAT, TokenType.BENAR,
         TokenType.SALAH, TokenType.KOSONG, TokenType.KURAWAL_BUKA, TokenType.FUNGSI,
         TokenType.MASUKAN, TokenType.MASUKAN_ANGKA, TokenType.MASUKAN_DESIMAL,
     )
 
+    # Satuan untuk "tunggu 1 detik"; tanpa satuan berarti detik
+    _SATUAN_WAKTU = {"detik": 1, "milidetik": 0.001, "menit": 60, "jam": 3600}
+
+    def _coba_kalimat_tunggu(self):
+        """Parse "tunggu 1 detik" / "tunggu 2 menit". None jika 'tunggu' dipakai biasa, mis. tunggu(1)."""
+        tok = self.saat_ini()
+        berikut = self.intip()
+        if berikut.tipe in (TokenType.KURUNG_BUKA, TokenType.KURANG):
+            if self._cari_penghubung(tuple(self._SATUAN_WAKTU), self.pos + 1) is None:
+                return None
+        elif berikut.tipe not in self._AWAL_NILAI:
+            return None
+        self.maju()  # tunggu
+        lama = self.parse_ekspresi()
+        faktor = 1
+        if self.periksa_kata(*self._SATUAN_WAKTU):
+            faktor = self._SATUAN_WAKTU[self.maju().nilai]
+        return NodeTunggu(lama, faktor, baris=tok.baris, kolom=tok.kolom)
+
     def _coba_kalimat_natural(self):
         """Parse kalimat seperti "tambahkan 1 ke skor". None jika bukan kalimat natural."""
         tok = self.saat_ini()
+        if tok.nilai == "tunggu":
+            return self._coba_kalimat_tunggu()
         penghubung = self._KALIMAT_NATURAL.get(tok.nilai)
         if penghubung is None:
             return None
@@ -895,6 +916,11 @@ class Parser:
         if tok.tipe == TokenType.IDENTIFIER:
             self.maju()
             return NodeIdentifier(tok.nilai, baris=tok.baris, kolom=tok.kolom)
+
+        # jam sekarang / menit sekarang / detik sekarang / waktu sekarang
+        if tok.tipe == TokenType.WAKTU_SEKARANG:
+            self.maju()
+            return NodeWaktuSekarang(tok.nilai.split()[0], baris=tok.baris, kolom=tok.kolom)
 
         # diri / super as identifier
         if tok.tipe in (TokenType.DIRI, TokenType.SUPER):

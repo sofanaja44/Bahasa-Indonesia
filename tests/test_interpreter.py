@@ -804,12 +804,43 @@ class TestPerbaikanBug:
 # Fungsi waktu
 # ============================================================
 
-class TestWaktu:
-    def test_waktu_sekarang(self):
-        kode = 'buat w = waktu_sekarang()\ntampilkan w["jam"] paling banyak 23, w["menit"] paling banyak 59'
-        assert tangkap_output(kode) == "benar benar"
+@pytest.fixture
+def jam_palsu(monkeypatch):
+    """Jam palsu mulai 23:59:57 yang maju hanya ketika program 'tunggu'."""
+    import datetime as dt
 
-    def test_tunggu(self, monkeypatch):
+    sekarang = [dt.datetime(2026, 1, 1, 23, 59, 57)]
+
+    class WaktuPalsu(dt.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return sekarang[0]
+
+    def tidur(detik):
+        sekarang[0] += dt.timedelta(seconds=detik)
+
+    monkeypatch.setattr("src.builtins.datetime", WaktuPalsu)
+    monkeypatch.setattr("time.sleep", tidur)
+    return sekarang
+
+
+class TestWaktu:
+    def test_jam_menit_detik_sekarang(self, jam_palsu):
+        assert tangkap_output("tampilkan jam sekarang, menit sekarang, detik sekarang") == "23 59 57"
+
+    def test_waktu_sekarang_dua_digit(self, jam_palsu):
+        assert tangkap_output("tunggu 3 detik\ntampilkan waktu sekarang") == "00:00:00"
+
+    def test_waktu_dalam_kondisi(self, jam_palsu):
+        assert tangkap_output('jika jam sekarang paling sedikit 18, maka tampilkan "malam"') == "malam"
+
+    def test_tunggu_dengan_satuan(self, monkeypatch):
+        dicatat = []
+        monkeypatch.setattr("time.sleep", dicatat.append)
+        jalankan_kode("tunggu 2 detik\ntunggu 1 menit\ntunggu 500 milidetik\ntunggu 3\nbuat jeda adalah 4\ntunggu jeda detik")
+        assert dicatat == [2, 60, pytest.approx(0.5), 3, 4]
+
+    def test_tunggu_sebagai_fungsi_tetap_bisa(self, monkeypatch):
         dicatat = []
         monkeypatch.setattr("time.sleep", dicatat.append)
         jalankan_kode("tunggu(1)\ntunggu(0.5)")
@@ -817,28 +848,21 @@ class TestWaktu:
 
     def test_tunggu_negatif_error(self):
         with pytest.raises(KesalahanNilai, match="negatif"):
-            jalankan_kode("tunggu(-1)")
+            jalankan_kode("tunggu -1 detik")
 
     def test_tunggu_bukan_angka_error(self):
         with pytest.raises(KesalahanNilai, match="angka"):
-            jalankan_kode('tunggu("sebentar")')
+            jalankan_kode('tunggu "sebentar"')
 
-    def test_jam_digital_berganti_hari(self, monkeypatch):
-        """Contoh jam digital harus benar saat 23:59:59 berganti ke 00:00:00."""
-        import datetime as dt
-
-        class WaktuPalsu(dt.datetime):
-            @classmethod
-            def now(cls, tz=None):
-                return cls(2026, 1, 1, 23, 59, 57)
-
-        monkeypatch.setattr("src.builtins.datetime", WaktuPalsu)
-        monkeypatch.setattr("time.sleep", lambda detik: None)
+    def test_jam_digital_berganti_hari(self, jam_palsu):
+        """Contoh jam digital: sapaan malam, 23:59:59 ke 00:00:00, dan alarm lima detik kemudian."""
         output = tangkap_output((FOLDER_CONTOH / "jam_digital.id").read_text(encoding="utf-8"))
-        assert "Saat itu malam." in output
-        assert "[ 23:59:59 ]" in output
-        assert "[ 00:00:00 ]" in output
-        assert "[ 00:00:06 ]" in output
+        assert "Selamat malam, Budi!" in output
+        assert "[ 23:59:59 ] tok" in output
+        assert "[ 00:00:00 ] tik" in output
+        assert "[ 00:00:02 ] tik\n   KRING!" in output
+        assert "[ 00:00:06 ] tik" in output
+        assert "Baterai jam habis" in output
 
 
 # ============================================================

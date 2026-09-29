@@ -44,6 +44,13 @@ class NodeIdentifier:
     baris: int = 0
     kolom: int = 0
 
+@dataclass
+class NodeWaktuSekarang:
+    """jam sekarang / menit sekarang / detik sekarang / waktu sekarang"""
+    bagian: str = "waktu"
+    baris: int = 0
+    kolom: int = 0
+
 
 # === Operasi ===
 
@@ -109,6 +116,15 @@ class NodeTambahkan:
 @dataclass
 class NodeTampilkan:
     ekspresi_list: list = field(default_factory=list)
+    baris: int = 0
+    kolom: int = 0
+
+
+@dataclass
+class NodeTunggu:
+    """tunggu 1 detik — lama dikali faktor satuan (menit = 60, milidetik = 0.001, ...)."""
+    lama: Any = None
+    faktor: float = 1
     baris: int = 0
     kolom: int = 0
 

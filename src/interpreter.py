@@ -12,7 +12,7 @@ from src.bk_types import (
     BKDaftar, BKKamus, BKFungsi, BKKelas, BKInstansi, BKMetodeTerikat, BKInduk,
     SinyalKembalikan, SinyalBerhenti, SinyalLewati,
 )
-from src.builtins import daftar_fungsi_bawaan, _ke_teks
+from src.builtins import daftar_fungsi_bawaan, _ke_teks, baca_waktu, tunggu
 from src.errors import (
     KesalahanIndonesia, KesalahanTipe, KesalahanBagiNol,
     KesalahanIndeks, KesalahanNama, KesalahanNilai, KesalahanKunci,
@@ -58,6 +58,8 @@ class Interpreter:
             return None
         if isinstance(node, NodeIdentifier):
             return env.dapatkan(node.nama, node.baris, node.kolom)
+        if isinstance(node, NodeWaktuSekarang):
+            return baca_waktu(node.bagian)
 
         # Operasi
         if isinstance(node, NodeOperasiBiner):
@@ -81,6 +83,12 @@ class Interpreter:
         if isinstance(node, NodeTampilkan):
             args = [self._eval(e, env) for e in node.ekspresi_list]
             print(" ".join(_ke_teks(a) for a in args))
+            return None
+        if isinstance(node, NodeTunggu):
+            try:
+                tunggu(self._eval(node.lama, env), node.faktor)
+            except ValueError as e:
+                raise KesalahanNilai(str(e), baris=node.baris, kolom=node.kolom)
             return None
 
         # Kondisi
