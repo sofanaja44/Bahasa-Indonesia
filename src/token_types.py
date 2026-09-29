@@ -20,6 +20,7 @@ class TokenType(Enum):
     # --- Kata kunci deklarasi ---
     BUAT = auto()            # buat (deklarasi variabel)
     TETAP = auto()           # tetap (konstanta)
+    ADALAH = auto()          # adalah (pengisian nilai; di dalam kondisi berarti ==)
 
     # --- Tipe data eksplisit ---
     BILANGAN = auto()        # bilangan
@@ -33,12 +34,13 @@ class TokenType(Enum):
     KOSONG = auto()          # kosong (None)
 
     # --- Kondisi ---
-    JIKA = auto()            # jika (if)
-    ATAU_JIKA = auto()       # atau jika (else if)
+    JIKA = auto()            # jika / kalau (if)
+    ATAU_JIKA = auto()       # atau jika / atau kalau (else if)
     SELAINNYA = auto()       # selainnya (else)
     PILIH = auto()           # pilih (switch)
     KETIKA = auto()          # ketika (case)
     BAWAAN = auto()          # bawaan (default)
+    MAKA = auto()            # maka (then) — pembuka blok kondisi
 
     # --- Perulangan ---
     SELAMA = auto()          # selama (while)
@@ -51,6 +53,7 @@ class TokenType(Enum):
     ULANGI = auto()          # ulangi (do/repeat)
     BERHENTI = auto()        # berhenti (break)
     LEWATI = auto()          # lewati (continue)
+    LAKUKAN = auto()         # lakukan (do) — pembuka blok perulangan
 
     # --- Fungsi ---
     FUNGSI = auto()          # fungsi (function)
@@ -83,23 +86,26 @@ class TokenType(Enum):
     # --- Operasi logika ---
     DAN = auto()             # dan (and)
     ATAU = auto()            # atau (or)
-    BUKAN = auto()           # bukan (not)
+    BUKAN = auto()           # bukan / tidak (not); "x bukan y" berarti !=
 
     # --- Operator "ada dalam" ---
     ADA = auto()             # ada (exists, bagian dari "ada dalam")
+    TIDAK_ADA = auto()       # tidak ada (bagian dari "tidak ada dalam")
 
     # --- Operator teks Indonesia (alternatif simbol) ---
     SAMA_DENGAN_OP = auto()   # sama dengan (==)
-    TIDAK_SAMA_OP = auto()    # tidak sama (!=)
-    LEBIH_DARI = auto()       # lebih dari (>)
-    KURANG_DARI = auto()      # kurang dari (<)
-    TIDAK_KURANG_DARI = auto() # tidak kurang dari (>=)
-    TIDAK_LEBIH_DARI = auto()  # tidak lebih dari (<=)
+    TIDAK_SAMA_OP = auto()    # tidak sama (dengan) (!=)
+    LEBIH_DARI = auto()       # lebih dari / lebih besar dari (>)
+    KURANG_DARI = auto()      # kurang dari / lebih kecil dari (<)
+    TIDAK_KURANG_DARI = auto() # tidak kurang dari / paling sedikit (>=)
+    TIDAK_LEBIH_DARI = auto()  # tidak lebih dari / paling banyak (<=)
     SISA_BAGI = auto()        # sisa bagi (%)
-    PANGKAT_KK = auto()       # pangkat (**) — sebagai kata kunci infix
+    HABIS_DIBAGI = auto()     # habis dibagi (x % y == 0)
+    TIDAK_HABIS_DIBAGI = auto() # tidak habis dibagi (x % y != 0)
+    PANGKAT_KK = auto()       # pangkat / dipangkatkan (**) — sebagai kata kunci infix
     DITAMBAH = auto()         # ditambah (+)
-    DIKURANG = auto()         # dikurang (-)
-    DIKALI = auto()           # dikali (*)
+    DIKURANG = auto()         # dikurang / dikurangi (-)
+    DIKALI = auto()           # dikali / dikalikan (*)
     DIBAGI = auto()           # dibagi (/)
 
     # --- Operator aritmatika ---
@@ -153,6 +159,7 @@ KATA_KUNCI = {
     # Deklarasi
     "buat": TokenType.BUAT,
     "tetap": TokenType.TETAP,
+    "adalah": TokenType.ADALAH,
 
     # Tipe data
     "bilangan": TokenType.BILANGAN,
@@ -166,10 +173,12 @@ KATA_KUNCI = {
 
     # Kondisi
     "jika": TokenType.JIKA,
+    "kalau": TokenType.JIKA,            # sinonim
     "selainnya": TokenType.SELAINNYA,
     "pilih": TokenType.PILIH,
     "ketika": TokenType.KETIKA,
     "bawaan": TokenType.BAWAAN,
+    "maka": TokenType.MAKA,
 
     # Perulangan
     "selama": TokenType.SELAMA,
@@ -181,6 +190,7 @@ KATA_KUNCI = {
     "ulangi": TokenType.ULANGI,
     "berhenti": TokenType.BERHENTI,
     "lewati": TokenType.LEWATI,
+    "lakukan": TokenType.LAKUKAN,
 
     # Fungsi
     "fungsi": TokenType.FUNGSI,
@@ -216,28 +226,80 @@ KATA_KUNCI = {
     "dan": TokenType.DAN,
     "atau": TokenType.ATAU,
     "bukan": TokenType.BUKAN,
+    "tidak": TokenType.BUKAN,           # sinonim: "jika tidak hujan"
 
-    # Keberadaan
+    # Keberadaan ("ada dalam" digabung di parser: ADA + DALAM)
     "ada": TokenType.ADA,
-    "setiap": TokenType.IDENTIFIER,    # handled via look-ahead dari "untuk"
 
-    # Kata kunci untuk operator teks (look-ahead di lexer)
-    # "sama", "tidak", "lebih", "kurang", "dengan", "sisa" — diproses via look-ahead
-    # Tidak didaftarkan sebagai standalone karena bisa jadi identifier biasa
+    # Kata seperti "sama", "lebih", "kurang", "paling", "sisa", "habis" hanya
+    # menjadi kata kunci sebagai bagian dari frasa (lihat FRASA_KATA_KUNCI),
+    # sehingga tetap bisa dipakai sebagai nama variabel biasa.
 
     # Operator aritmatika teks
     "ditambah": TokenType.DITAMBAH,
     "dikurang": TokenType.DIKURANG,
+    "dikurangi": TokenType.DIKURANG,    # bentuk baku
     "dikali": TokenType.DIKALI,
+    "dikalikan": TokenType.DIKALI,
     "dibagi": TokenType.DIBAGI,
+    "pangkat": TokenType.PANGKAT_KK,
+    "dipangkatkan": TokenType.PANGKAT_KK,
 }
 
 # ============================================================
-# Kata kunci multi-kata — di-handle dengan look-ahead di lexer
+# Frasa kata kunci (multi-kata) → TokenType
 # ============================================================
-# "atau jika"   → ATAU_JIKA  (ketika lexer melihat "atau", cek apakah next = "jika")
-# "untuk setiap" → UNTUK_SETIAP (ketika lexer melihat "untuk", cek apakah next = "setiap")
-# "ada dalam"   → handled di parser (ADA + DALAM)
+# Lexer mencocokkan frasa TERPANJANG lebih dulu: "tidak sama dengan" menang
+# atas "tidak sama", dan "lebih dari atau sama dengan" menang atas "lebih dari".
+FRASA_KATA_KUNCI = {
+    # Kondisi & perulangan
+    ("atau", "jika"): TokenType.ATAU_JIKA,
+    ("atau", "kalau"): TokenType.ATAU_JIKA,
+    ("untuk", "setiap"): TokenType.UNTUK_SETIAP,
+    ("di", "dalam"): TokenType.DALAM,
+
+    # Keberadaan: "x tidak ada dalam daftar"
+    ("tidak", "ada"): TokenType.TIDAK_ADA,
+
+    # Aritmatika
+    ("sisa", "bagi"): TokenType.SISA_BAGI,
+    ("habis", "dibagi"): TokenType.HABIS_DIBAGI,
+    ("tidak", "habis", "dibagi"): TokenType.TIDAK_HABIS_DIBAGI,
+
+    # Perbandingan == dan !=
+    ("sama", "dengan"): TokenType.SAMA_DENGAN_OP,
+    ("tidak", "sama"): TokenType.TIDAK_SAMA_OP,
+    ("tidak", "sama", "dengan"): TokenType.TIDAK_SAMA_OP,
+
+    # Perbandingan >= dan <= tanpa kata "dari"
+    ("paling", "sedikit"): TokenType.TIDAK_KURANG_DARI,
+    ("paling", "banyak"): TokenType.TIDAK_LEBIH_DARI,
+    ("lebih", "besar", "atau", "sama", "dengan"): TokenType.TIDAK_KURANG_DARI,
+    ("lebih", "kecil", "atau", "sama", "dengan"): TokenType.TIDAK_LEBIH_DARI,
+    ("lebih", "besar", "sama", "dengan"): TokenType.TIDAK_KURANG_DARI,
+    ("lebih", "kecil", "sama", "dengan"): TokenType.TIDAK_LEBIH_DARI,
+}
+
+# Perbandingan yang memakai kata "dari". Setiap frasa juga didaftarkan dengan
+# "daripada", mis. "lebih besar daripada", "kurang daripada".
+_FRASA_PERBANDINGAN_DARI = {
+    ("lebih", "dari"): TokenType.LEBIH_DARI,
+    ("lebih", "besar", "dari"): TokenType.LEBIH_DARI,
+    ("kurang", "dari"): TokenType.KURANG_DARI,
+    ("lebih", "kecil", "dari"): TokenType.KURANG_DARI,
+    ("tidak", "kurang", "dari"): TokenType.TIDAK_KURANG_DARI,
+    ("tidak", "lebih", "dari"): TokenType.TIDAK_LEBIH_DARI,
+    ("lebih", "dari", "atau", "sama", "dengan"): TokenType.TIDAK_KURANG_DARI,
+    ("lebih", "besar", "dari", "atau", "sama", "dengan"): TokenType.TIDAK_KURANG_DARI,
+    ("kurang", "dari", "atau", "sama", "dengan"): TokenType.TIDAK_LEBIH_DARI,
+    ("lebih", "kecil", "dari", "atau", "sama", "dengan"): TokenType.TIDAK_LEBIH_DARI,
+}
+for _frasa, _tipe in _FRASA_PERBANDINGAN_DARI.items():
+    FRASA_KATA_KUNCI[_frasa] = _tipe
+    FRASA_KATA_KUNCI[tuple("daripada" if k == "dari" else k for k in _frasa)] = _tipe
+
+PANJANG_FRASA_MAKS = max(len(frasa) for frasa in FRASA_KATA_KUNCI)
+AWALAN_FRASA = {frasa[0] for frasa in FRASA_KATA_KUNCI}
 
 # ============================================================
 # Mapping operator → TokenType
@@ -281,3 +343,36 @@ PUNCTUATION = {
 # Kata kunci "desimal" perlu perlakuan khusus karena bentrok dengan tipe token DESIMAL
 # Ditangani di lexer: jika identifier == "desimal", cek konteks
 KATA_KUNCI["desimal"] = TokenType.DESIMAL_TIPE
+
+
+# ============================================================
+# Deskripsi tipe token untuk pesan kesalahan yang mudah dipahami
+# ============================================================
+_DESKRIPSI_KHUSUS = {
+    TokenType.IDENTIFIER: "nama (variabel/fungsi)",
+    TokenType.ANGKA: "angka",
+    TokenType.DESIMAL: "angka desimal",
+    TokenType.TEKS: "teks",
+    TokenType.TEKS_FORMAT: "teks format",
+    TokenType.INDENT: "blok baru yang menjorok ke dalam",
+    TokenType.DEDENT: "akhir blok",
+    TokenType.BARIS_BARU: "akhir baris",
+    TokenType.EOF: "akhir program",
+}
+_SIMBOL_UNTUK_TIPE = {tipe: simbol for simbol, tipe in {**OPERATORS, **PUNCTUATION}.items()}
+_KATA_UNTUK_TIPE = {}
+for _kata, _tipe in KATA_KUNCI.items():
+    _KATA_UNTUK_TIPE.setdefault(_tipe, _kata)
+for _frasa, _tipe in FRASA_KATA_KUNCI.items():
+    _KATA_UNTUK_TIPE.setdefault(_tipe, " ".join(_frasa))
+
+
+def jelaskan_tipe(tipe: TokenType) -> str:
+    """Nama tipe token dalam bahasa sehari-hari, mis. TITIK_DUA → "tanda ':'"."""
+    if tipe in _DESKRIPSI_KHUSUS:
+        return _DESKRIPSI_KHUSUS[tipe]
+    if tipe in _SIMBOL_UNTUK_TIPE:
+        return f"tanda '{_SIMBOL_UNTUK_TIPE[tipe]}'"
+    if tipe in _KATA_UNTUK_TIPE:
+        return f"kata '{_KATA_UNTUK_TIPE[tipe]}'"
+    return tipe.name

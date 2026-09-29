@@ -481,3 +481,91 @@ class TestProgramLengkap:
         assert TokenType.TAMBAH in tipe
         assert TokenType.KALI in tipe
         assert TokenType.KURANG in tipe
+
+
+# ============================================================
+# Test: Frasa Natural (multi-kata)
+# ============================================================
+
+class TestFrasaNatural:
+    def test_tidak_sama_dengan_satu_token(self):
+        """'tidak sama dengan' (tercantum di PRD) harus satu token, tanpa sisa 'dengan'."""
+        assert tipe_token("x tidak sama dengan y") == [
+            TokenType.IDENTIFIER, TokenType.TIDAK_SAMA_OP, TokenType.IDENTIFIER,
+        ]
+
+    def test_lebih_besar_kecil_dari(self):
+        assert tipe_token("x lebih besar dari y")[1] == TokenType.LEBIH_DARI
+        assert tipe_token("x lebih kecil dari y")[1] == TokenType.KURANG_DARI
+
+    def test_varian_daripada(self):
+        assert tipe_token("x lebih besar daripada y")[1] == TokenType.LEBIH_DARI
+        assert tipe_token("x kurang daripada y")[1] == TokenType.KURANG_DARI
+
+    def test_atau_sama_dengan(self):
+        """Cara membaca ≥ dan ≤ di sekolah: 'lebih dari atau sama dengan'."""
+        assert tipe_token("x lebih dari atau sama dengan y") == [
+            TokenType.IDENTIFIER, TokenType.TIDAK_KURANG_DARI, TokenType.IDENTIFIER,
+        ]
+        assert tipe_token("x kurang dari atau sama dengan y")[1] == TokenType.TIDAK_LEBIH_DARI
+        assert tipe_token("x lebih besar sama dengan y")[1] == TokenType.TIDAK_KURANG_DARI
+
+    def test_paling_sedikit_banyak(self):
+        assert tipe_token("x paling sedikit 17")[1] == TokenType.TIDAK_KURANG_DARI
+        assert tipe_token("x paling banyak 17")[1] == TokenType.TIDAK_LEBIH_DARI
+
+    def test_habis_dibagi(self):
+        assert tipe_token("x habis dibagi 3")[1] == TokenType.HABIS_DIBAGI
+        assert tipe_token("x tidak habis dibagi 3")[1] == TokenType.TIDAK_HABIS_DIBAGI
+
+    def test_tidak_ada_di_dalam(self):
+        assert tipe_token("x tidak ada di dalam d") == [
+            TokenType.IDENTIFIER, TokenType.TIDAK_ADA, TokenType.DALAM, TokenType.IDENTIFIER,
+        ]
+
+    def test_nilai_dan_kolom_frasa(self):
+        tokens = tokenisasi("x paling sedikit 1")
+        assert tokens[1].nilai == "paling sedikit"
+        assert tokens[1].kolom == 3
+
+    def test_awal_frasa_tetap_boleh_jadi_nama(self):
+        """Tanpa sisa frasanya, 'lebih', 'sama', 'paling', dst. adalah nama biasa."""
+        for kata in ("lebih", "kurang", "sama", "paling", "habis", "di", "sisa"):
+            assert tipe_token(f"buat {kata} = 1")[1] == TokenType.IDENTIFIER
+
+    def test_frasa_tidak_menyeberang_baris(self):
+        assert TokenType.SAMA_DENGAN_OP not in tipe_token("buat x = sama\ndengan = 1")
+
+
+class TestKataKunciNatural:
+    def test_adalah_maka_lakukan(self):
+        assert tipe_token("adalah maka lakukan") == [
+            TokenType.ADALAH, TokenType.MAKA, TokenType.LAKUKAN,
+        ]
+
+    def test_kalau_sinonim_jika(self):
+        assert tipe_token("kalau")[0] == TokenType.JIKA
+        assert tipe_token("atau kalau") == [TokenType.ATAU_JIKA]
+
+    def test_tidak_sinonim_bukan(self):
+        tokens = tokenisasi("tidak hujan")
+        assert tokens[0].tipe == TokenType.BUKAN
+        assert tokens[0].nilai == "tidak"
+
+    def test_bentuk_baku_aritmatika(self):
+        assert tipe_token("a dikurangi b dikalikan c dipangkatkan 2") == [
+            TokenType.IDENTIFIER, TokenType.DIKURANG, TokenType.IDENTIFIER,
+            TokenType.DIKALI, TokenType.IDENTIFIER, TokenType.PANGKAT_KK, TokenType.ANGKA,
+        ]
+
+
+class TestBarisDalamKurung:
+    def test_daftar_multi_baris(self):
+        """Baris baru dan indentasi di dalam kurung diabaikan."""
+        tipe = [t.tipe for t in tokenisasi("buat d = [\n    1,\n    2,\n]")]
+        assert TokenType.INDENT not in tipe
+        assert TokenType.BARIS_BARU not in tipe
+
+    def test_baris_baru_setelah_kurung_ditutup(self):
+        tipe = [t.tipe for t in tokenisasi("buat d = [\n    1\n]\ntampilkan d")]
+        assert tipe.count(TokenType.BARIS_BARU) == 1

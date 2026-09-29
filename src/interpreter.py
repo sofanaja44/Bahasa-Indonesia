@@ -9,7 +9,7 @@ from typing import Any
 from src.ast_nodes import *
 from src.environment import Lingkungan
 from src.bk_types import (
-    BKDaftar, BKKamus, BKFungsi, BKKelas, BKInstansi, BKMetodeTerikat,
+    BKDaftar, BKKamus, BKFungsi, BKKelas, BKInstansi, BKMetodeTerikat, BKInduk,
     SinyalKembalikan, SinyalBerhenti, SinyalLewati,
 )
 from src.builtins import daftar_fungsi_bawaan, _ke_teks
@@ -74,6 +74,8 @@ class Interpreter:
             return self._eval_penugasan(node, env)
         if isinstance(node, NodePenugasanGabungan):
             return self._eval_penugasan_gabungan(node, env)
+        if isinstance(node, NodeTambahkan):
+            return self._eval_tambahkan(node, env)
 
         # I/O
         if isinstance(node, NodeTampilkan):
@@ -96,6 +98,8 @@ class Interpreter:
             return self._eval_untuk_setiap(node, env)
         if isinstance(node, NodeUlangi):
             return self._eval_ulangi(node, env)
+        if isinstance(node, NodeUlangiKali):
+            return self._eval_ulangi_kali(node, env)
         if isinstance(node, NodeBerhenti):
             raise SinyalBerhenti()
         if isinstance(node, NodeLewati):
@@ -152,15 +156,15 @@ class Interpreter:
     def _eval_format_teks(self, node: NodeTeksFormat, env: Lingkungan) -> str:
         template = node.template
         def ganti(match):
-            expr_str = match.group(1)
+            expr_str = match.group(1).strip()
             from src.lexer import tokenisasi
-            from src.parser import parse
+            from src.parser import Parser
             tokens = tokenisasi(expr_str)
-            tree = parse(tokens, expr_str)
-            if tree.pernyataan:
-                nilai = self._eval(tree.pernyataan[0], env)
-                return _ke_teks(nilai)
-            return ""
+            if len(tokens) == 1:  # hanya EOF, mis. "{ }"
+                return ""
+            # Dibaca sebagai ekspresi, bukan perintah: "{x adalah 5}" membandingkan, tidak mengisi
+            ekspresi = Parser(tokens, expr_str).parse_ekspresi_tunggal()
+            return _ke_teks(self._eval(ekspresi, env))
         return re.sub(r"\{([^}]+)\}", ganti, template)
 
     # ============================
@@ -178,18 +182,16 @@ class Interpreter:
 
         kiri = self._eval(node.kiri, env)
         kanan = self._eval(node.kanan, env)
+        return self._hitung_biner(node.operator, kiri, kanan, node)
 
-        if node.operator == "ada dalam":
-            if isinstance(kanan, BKDaftar):
-                return kiri in kanan
-            if isinstance(kanan, BKKamus):
-                return kiri in kanan
-            if isinstance(kanan, str):
-                return kiri in kanan
-            raise KesalahanTipe("Operasi 'ada dalam' membutuhkan daftar, kamus, atau teks", baris=node.baris)
-
-        op = node.operator
+    def _hitung_biner(self, op: str, kiri, kanan, node):
+        """Hitung operasi biner pada dua nilai yang sudah dievaluasi."""
         try:
+            if op in ("ada dalam", "tidak ada dalam"):
+                if not isinstance(kanan, (BKDaftar, BKKamus, str)):
+                    raise KesalahanTipe(f"Operasi '{op}' membutuhkan daftar, kamus, atau teks", baris=node.baris)
+                ada = kiri in kanan
+                return ada if op == "ada dalam" else not ada
             if op == "+":
                 if isinstance(kiri, str) and isinstance(kanan, str):
                     return kiri + kanan
@@ -262,52 +264,55 @@ class Interpreter:
 
     def _eval_penugasan(self, node: NodePenugasan, env: Lingkungan):
         nilai = self._eval(node.ekspresi, env)
-        target = node.target
+        self._setel_target(node.target, nilai, env, node)
+        return nilai
+
+    def _setel_target(self, target, nilai, env: Lingkungan, node):
+        """Simpan nilai ke variabel, elemen daftar/kamus, atau atribut objek."""
         if isinstance(target, NodeIdentifier):
             env.setel(target.nama, nilai, target.baris, target.kolom)
         elif isinstance(target, NodeAksesDaftar):
             obj = self._eval(target.objek, env)
             idx = self._eval(target.indeks, env)
-            if isinstance(obj, BKDaftar):
-                obj[idx] = nilai
-            elif isinstance(obj, BKKamus):
-                obj[idx] = nilai
-            else:
+            if not isinstance(obj, (BKDaftar, BKKamus)):
                 raise KesalahanTipe("Tidak bisa mengakses indeks pada tipe ini", baris=node.baris)
+            try:
+                obj[idx] = nilai
+            except IndexError:
+                raise KesalahanIndeks(f"Indeks {idx} di luar batas daftar", baris=node.baris, kolom=node.kolom)
+            except TypeError:
+                raise KesalahanTipe(f"Indeks daftar harus berupa bilangan bulat, bukan '{_ke_teks(idx)}'",
+                                    baris=node.baris, kolom=node.kolom)
         elif isinstance(target, NodeAksesAtribut):
             obj = self._eval(target.objek, env)
             if isinstance(obj, BKInstansi):
                 obj.setel(target.atribut, nilai)
             else:
                 raise KesalahanTipe("Tidak bisa menyetel atribut pada tipe ini", baris=node.baris)
-        return nilai
+        else:
+            raise KesalahanTipe("Bagian ini tidak bisa diberi nilai", baris=node.baris, kolom=node.kolom)
 
     def _eval_penugasan_gabungan(self, node: NodePenugasanGabungan, env: Lingkungan):
-        old = self._eval(node.target, env)
-        right = self._eval(node.ekspresi, env)
-        op_map = {"+=": "+", "-=": "-", "*=": "*", "/=": "/", "%=": "%"}
-        op = op_map.get(node.operator, "+")
-        # Create a synthetic binary operation
-        biner = NodeOperasiBiner(NodeAngka(0), op, NodeAngka(0), node.baris, node.kolom)
-        # Evaluate manually
-        if op == "+":
-            if isinstance(old, str): new_val = old + _ke_teks(right)
-            else: new_val = old + right
-        elif op == "-": new_val = old - right
-        elif op == "*": new_val = old * right
-        elif op == "/":
-            if right == 0: raise KesalahanBagiNol("Tidak bisa membagi dengan nol", baris=node.baris)
-            new_val = old / right
-        elif op == "%":
-            if right == 0: raise KesalahanBagiNol("Tidak bisa membagi dengan nol", baris=node.baris)
-            new_val = old % right
-        else:
-            new_val = old + right
+        lama = self._eval(node.target, env)
+        kanan = self._eval(node.ekspresi, env)
+        op = {"+=": "+", "-=": "-", "*=": "*", "/=": "/", "%=": "%"}[node.operator]
+        baru = self._hitung_biner(op, lama, kanan, node)
+        self._setel_target(node.target, baru, env, node)
+        return baru
 
-        penugasan = NodePenugasan(node.target, NodeAngka(0), node.baris, node.kolom)
-        if isinstance(node.target, NodeIdentifier):
-            env.setel(node.target.nama, new_val, node.baris, node.kolom)
-        return new_val
+    def _eval_tambahkan(self, node: NodeTambahkan, env: Lingkungan):
+        """tambahkan X ke Y: masukkan X ke daftar Y, atau Y = Y + X untuk angka/teks."""
+        nilai = self._eval(node.nilai, env)
+        wadah = self._eval(node.target, env)
+        if isinstance(wadah, BKDaftar):
+            wadah.tambahkan(nilai)
+            return wadah
+        if isinstance(wadah, BKKamus):
+            raise KesalahanTipe("Tidak bisa 'tambahkan' ke kamus. Gunakan kamus[kunci] = nilai",
+                                baris=node.baris, kolom=node.kolom)
+        baru = self._hitung_biner("+", wadah, nilai, node)
+        self._setel_target(node.target, baru, env, node)
+        return baru
 
     # ============================
     # Kondisi
@@ -366,6 +371,11 @@ class Interpreter:
 
     def _eval_untuk_setiap(self, node: NodeUntukSetiap, env: Lingkungan):
         iterable = self._eval(node.iterable, env)
+        if not isinstance(iterable, (BKDaftar, BKKamus, str)):
+            raise KesalahanTipe(
+                f"'untuk setiap' hanya bisa menelusuri daftar, kamus, atau teks, bukan '{_ke_teks(iterable)}'",
+                baris=node.baris, kolom=node.kolom,
+            )
         items = iterable.elemen if isinstance(iterable, BKDaftar) else iterable
         for item in items:
             loop_env = env.anak("untuk_setiap")
@@ -388,6 +398,24 @@ class Interpreter:
                 pass
             if not self._eval(node.kondisi, env):
                 break
+        return None
+
+    def _eval_ulangi_kali(self, node: NodeUlangiKali, env: Lingkungan):
+        jumlah = self._eval(node.jumlah, env)
+        if isinstance(jumlah, float) and jumlah.is_integer():
+            jumlah = int(jumlah)  # hasil pembagian seperti 6 / 2 tetap boleh
+        if isinstance(jumlah, bool) or not isinstance(jumlah, int):
+            raise KesalahanTipe(
+                f"Jumlah perulangan harus bilangan bulat, bukan '{_ke_teks(jumlah)}'",
+                baris=node.baris, kolom=node.kolom,
+            )
+        for _ in range(jumlah):
+            try:
+                self._jalankan_blok(node.blok, env.anak("ulangi"))
+            except SinyalBerhenti:
+                break
+            except SinyalLewati:
+                continue
         return None
 
     # ============================
@@ -452,6 +480,12 @@ class Interpreter:
     def _panggil_metode(self, metode: BKMetodeTerikat, args: list, node) -> Any:
         func_env = metode.fungsi.lingkungan.anak(metode.fungsi.nama)
         func_env.definisikan("diri", metode.instansi)
+        kelas_pemilik = metode.fungsi.kelas
+        if kelas_pemilik is not None and kelas_pemilik.induk is not None:
+            # induk.inisialisasi(...) — "super" tetap didukung sebagai sinonim
+            induk = BKInduk(metode.instansi, kelas_pemilik.induk)
+            func_env.definisikan("induk", induk)
+            func_env.definisikan("super", induk)
         for i, (param_nama, default) in enumerate(metode.fungsi.parameter):
             if param_nama == "diri":
                 continue
@@ -490,6 +524,8 @@ class Interpreter:
                 atribut[stmt.nama] = self._eval(stmt.ekspresi, kelas_env)
 
         kelas = BKKelas(node.nama, induk_kelas, metode, atribut)
+        for f in metode.values():
+            f.kelas = kelas
         env.definisikan(node.nama, kelas)
         return kelas
 
@@ -542,6 +578,12 @@ class Interpreter:
             if val is not None:
                 return val
             raise KesalahanNama(f"Atribut '{nama}' tidak ditemukan pada {obj.kelas.nama}", baris=node.baris)
+
+        if isinstance(obj, BKInduk):
+            val = obj.dapatkan(nama)
+            if val is not None:
+                return val
+            raise KesalahanNama(f"Kelas induk {obj.kelas.nama} tidak memiliki metode '{nama}'", baris=node.baris)
 
         if isinstance(obj, BKDaftar):
             m = obj.metode(nama)
