@@ -50,6 +50,9 @@ def jalankan_berkas(path: str):
     except KesalahanIndonesia as e:
         print(e, file=sys.stderr)
         sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nProgram dihentikan.", file=sys.stderr)
+        sys.exit(130)
     except Exception as e:
         print(f"❌ Kesalahan internal: {e}", file=sys.stderr)
         sys.exit(1)

@@ -2,6 +2,9 @@
 builtins.py — Fungsi bawaan (built-in) untuk bahasa pemrograman Indonesia.
 """
 
+import time
+from datetime import datetime
+
 from src.bk_types import BKDaftar, BKKamus
 
 
@@ -30,6 +33,9 @@ def daftar_fungsi_bawaan() -> dict:
         "jumlah": lambda x: sum(x.elemen if isinstance(x, BKDaftar) else x),
         "diurutkan": lambda x: BKDaftar(sorted(x.elemen if isinstance(x, BKDaftar) else x)),
         "dibalik": lambda x: BKDaftar(list(reversed(x.elemen if isinstance(x, BKDaftar) else x))),
+        # Waktu
+        "waktu_sekarang": _waktu_sekarang,
+        "tunggu": _tunggu,
         # Pesan kesalahan untuk 'lempar': lempar Kesalahan("Pembagi tidak boleh nol!")
         "Kesalahan": _kesalahan,
         "Error": _kesalahan,
@@ -66,6 +72,21 @@ def _cetak(*args):
 def _kesalahan(pesan=""):
     """Buat pesan kesalahan; 'lempar' mengubahnya menjadi error yang bisa ditangkap."""
     return _ke_teks(pesan)
+
+
+def _waktu_sekarang():
+    """Waktu saat ini sebagai kamus: {"jam": .., "menit": .., "detik": ..}."""
+    sekarang = datetime.now()
+    return BKKamus({"jam": sekarang.hour, "menit": sekarang.minute, "detik": sekarang.second})
+
+
+def _tunggu(detik):
+    """Berhenti sejenak selama beberapa detik."""
+    if isinstance(detik, bool) or not isinstance(detik, (int, float)):
+        raise ValueError("tunggu() membutuhkan angka, yaitu lama menunggu dalam detik")
+    if detik < 0:
+        raise ValueError("Lama menunggu tidak boleh negatif")
+    time.sleep(detik)
 
 
 def _masukan(prompt=""):

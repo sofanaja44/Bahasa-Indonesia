@@ -1,0 +1,59 @@
+# ==================================================
+# Cerita: Jam Digital Budi
+# Jam ini membaca waktu asli komputer, lalu berdetak setiap detik.
+# Jalankan: python indonesia.py contoh/jam_digital.id
+# ==================================================
+
+buat nama adalah "Budi"
+
+# Jam digital menampilkan angka selalu dua digit: 7 menjadi "07"
+fungsi dua_digit(angka):
+    jika angka kurang dari 10, maka kembalikan "0" ditambah angka
+    kembalikan ubah_teks(angka)
+
+fungsi bagian_hari(jam):
+    jika jam kurang dari 4, maka kembalikan "dini hari"
+    atau jika jam kurang dari 11, maka kembalikan "pagi"
+    atau jika jam kurang dari 15, maka kembalikan "siang"
+    atau jika jam kurang dari 18, maka kembalikan "sore"
+    jika tidak, kembalikan "malam"
+
+# Budi melirik jam di mejanya
+buat sekarang adalah waktu_sekarang()
+buat jam adalah sekarang["jam"]
+buat menit adalah sekarang["menit"]
+buat detik adalah sekarang["detik"]
+
+tampilkan format"{nama} melirik jam digital di mejanya. Saat itu {bagian_hari(jam)}."
+
+# Baterai jamnya hampir habis, hanya cukup untuk 10 detik lagi
+buat baterai adalah 10
+
+# Budi memasang alarm lima detik dari sekarang
+buat detik_alarm adalah (detik ditambah 5) sisa bagi 60
+tampilkan format"Ia memasang alarm untuk lima detik lagi."
+tampilkan
+
+ulangi baterai kali:
+    buat suara adalah "tik"
+    jika detik tidak habis dibagi 2, maka ubah suara menjadi "tok"
+
+    tampilkan format"   [ {dua_digit(jam)}:{dua_digit(menit)}:{dua_digit(detik)} ]  {suara}..."
+    jika detik adalah detik_alarm, maka tampilkan "   KRING! KRING! Waktunya minum air, Budi!"
+
+    # Satu detik berlalu
+    tunggu(1)
+    tambahkan 1 ke detik
+
+    # Setelah 59 detik, menit bertambah; setelah 59 menit, jam bertambah
+    jika detik adalah 60, maka:
+        ubah detik menjadi 0
+        tambahkan 1 ke menit
+    jika menit adalah 60, maka:
+        ubah menit menjadi 0
+        tambahkan 1 ke jam
+    jika jam adalah 24, maka ubah jam menjadi 0
+
+tampilkan
+tampilkan "Tiba-tiba layarnya berkedip... baterai jam habis."
+tampilkan format"{nama} tersenyum, lalu mengganti baterainya. Tamat."

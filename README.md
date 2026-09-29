@@ -152,6 +152,7 @@ Interpretasi kode Bahasa Indonesia dieksekusi melalui mesin *backend* Python.
 ```bash
 python indonesia.py contoh/demo_lengkap.id
 python indonesia.py contoh/cerita.id      # program bergaya bercerita
+python indonesia.py contoh/jam_digital.id # jam digital yang berdetak setiap detik
 ```
 
 2. **Gunakan Mode Interaktif (REPL) langsung di Terminal:**

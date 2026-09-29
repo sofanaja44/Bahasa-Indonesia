@@ -801,6 +801,47 @@ class TestPerbaikanBug:
 
 
 # ============================================================
+# Fungsi waktu
+# ============================================================
+
+class TestWaktu:
+    def test_waktu_sekarang(self):
+        kode = 'buat w = waktu_sekarang()\ntampilkan w["jam"] paling banyak 23, w["menit"] paling banyak 59'
+        assert tangkap_output(kode) == "benar benar"
+
+    def test_tunggu(self, monkeypatch):
+        dicatat = []
+        monkeypatch.setattr("time.sleep", dicatat.append)
+        jalankan_kode("tunggu(1)\ntunggu(0.5)")
+        assert dicatat == [1, 0.5]
+
+    def test_tunggu_negatif_error(self):
+        with pytest.raises(KesalahanNilai, match="negatif"):
+            jalankan_kode("tunggu(-1)")
+
+    def test_tunggu_bukan_angka_error(self):
+        with pytest.raises(KesalahanNilai, match="angka"):
+            jalankan_kode('tunggu("sebentar")')
+
+    def test_jam_digital_berganti_hari(self, monkeypatch):
+        """Contoh jam digital harus benar saat 23:59:59 berganti ke 00:00:00."""
+        import datetime as dt
+
+        class WaktuPalsu(dt.datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return cls(2026, 1, 1, 23, 59, 57)
+
+        monkeypatch.setattr("src.builtins.datetime", WaktuPalsu)
+        monkeypatch.setattr("time.sleep", lambda detik: None)
+        output = tangkap_output((FOLDER_CONTOH / "jam_digital.id").read_text(encoding="utf-8"))
+        assert "Saat itu malam." in output
+        assert "[ 23:59:59 ]" in output
+        assert "[ 00:00:00 ]" in output
+        assert "[ 00:00:06 ]" in output
+
+
+# ============================================================
 # Semua program contoh harus berjalan tanpa error
 # ============================================================
 
@@ -808,7 +849,8 @@ FOLDER_CONTOH = Path(__file__).resolve().parent.parent / "contoh"
 
 
 @pytest.mark.parametrize("berkas", sorted(FOLDER_CONTOH.glob("*.id")), ids=lambda p: p.name)
-def test_program_contoh_berjalan(berkas):
+def test_program_contoh_berjalan(berkas, monkeypatch):
+    monkeypatch.setattr("time.sleep", lambda detik: None)  # jam_digital.id tidak perlu benar-benar menunggu
     kode = berkas.read_text(encoding="utf-8")
     buf = StringIO()
     with redirect_stdout(buf):
