@@ -3,9 +3,11 @@
 indonesia.py — CLI entry point untuk bahasa pemrograman Indonesia.
 
 Penggunaan:
-    python indonesia.py                    # Masuk ke mode REPL
     python indonesia.py program.id         # Jalankan file .id
+    python indonesia.py repl               # Masuk ke mode interaktif (REPL)
     python indonesia.py -e "tampilkan 42"  # Jalankan kode langsung
+    python indonesia.py bantu              # Tampilkan bantuan ini
+    python indonesia.py versi              # Tampilkan versi
 """
 
 import sys
@@ -17,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.lexer import tokenisasi
 from src.parser import parse
 from src.interpreter import Interpreter
+from src.builtins import _ke_teks
 from src.errors import KesalahanIndonesia
 
 
@@ -88,7 +91,7 @@ def mode_interaktif():
             tree = parse(tokens, baris)
             hasil = interpreter.jalankan(tree)
             if hasil is not None:
-                print(hasil)
+                print(_ke_teks(hasil))  # benar/salah/kosong, bukan True/False/None
         except KesalahanIndonesia as e:
             print(e)
         except Exception as e:
@@ -98,15 +101,15 @@ def mode_interaktif():
 def main():
     args = sys.argv[1:]
 
-    if not args:
+    if not args or args[0] == "repl":
         mode_interaktif()
         return
 
-    if args[0] in ("--versi", "--version", "-v"):
+    if args[0] in ("versi", "--versi", "--version", "-v"):
         print(f"Indonesia v{VERSI}")
         return
 
-    if args[0] in ("--bantuan", "--help", "-h"):
+    if args[0] in ("bantu", "bantuan", "--bantu", "--bantuan", "--help", "-h"):
         print(__doc__)
         return
 
