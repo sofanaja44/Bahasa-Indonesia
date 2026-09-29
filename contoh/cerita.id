@@ -1,0 +1,68 @@
+# ==================================================
+# Cerita: Budi Pergi ke Pasar
+# Program ini ditulis dengan gaya natural, seperti sedang bercerita.
+# Jalankan: python indonesia.py contoh/cerita.id
+# ==================================================
+
+buat nama adalah "Budi"
+buat uang adalah 50000
+buat keranjang adalah []
+
+tampilkan format"Pagi ini {nama} pergi ke pasar membawa uang Rp{uang}."
+
+# Harga buah di pasar hari ini
+buat harga adalah {
+    "apel": 12000,
+    "jeruk": 8000,
+    "durian": 60000,
+    "mangga": 15000,
+}
+
+untuk setiap buah dalam harga, lakukan:
+    jika uang paling sedikit harga[buah], maka:
+        kurangi uang dengan harga[buah]
+        tambahkan buah ke keranjang
+        tampilkan format"- {nama} membeli {buah}, sisa uangnya Rp{uang}."
+    jika tidak:
+        tampilkan format"- Uang {nama} tidak cukup untuk membeli {buah}."
+
+tampilkan format"Isi keranjang: {keranjang}"
+jika "durian" tidak ada dalam keranjang, maka tampilkan "Sayang sekali, tidak jadi makan durian."
+
+# Di jalan pulang, Budi bernyanyi
+tampilkan
+ulangi 3 kali, tampilkan "La la la..."
+
+# Kucing peliharaan Budi menyambut di rumah
+kelas Hewan:
+    fungsi inisialisasi(nama, suara):
+        diri.nama adalah nama
+        diri.suara adalah suara
+
+    fungsi bersuara():
+        tampilkan format"{diri.nama} berkata: {diri.suara}!"
+
+kelas Kucing mewarisi Hewan:
+    fungsi inisialisasi(nama):
+        induk.inisialisasi(nama, "Meong")
+
+buat kucing adalah Kucing("Si Belang")
+kucing.bersuara()
+
+# Setiap buah dipotong menjadi 4 bagian untuk adik-adik
+buat potongan adalah panjang(keranjang) dikali 4
+buat jumlah_adik adalah 5
+buat sisa_potong adalah potongan sisa bagi jumlah_adik
+
+jika potongan habis dibagi jumlah_adik, maka tampilkan "Semua potongan dibagi rata."
+jika tidak, tampilkan format"{potongan} potong buah dibagi untuk {jumlah_adik} adik, sisa {sisa_potong} potong untuk {nama}."
+
+# Malamnya, Budi menghitung mundur sebelum tidur
+tampilkan
+buat hitungan adalah 3
+ulangi:
+    tampilkan format"{hitungan}..."
+    kurangi hitungan dengan 1
+sampai hitungan adalah 0
+
+tampilkan format"Selamat tidur, {nama}!"

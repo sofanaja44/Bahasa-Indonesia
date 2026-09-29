@@ -95,6 +95,14 @@ class NodePenugasanGabungan:
     baris: int = 0
     kolom: int = 0
 
+@dataclass
+class NodeTambahkan:
+    """tambahkan <nilai> ke <target> — masuk ke daftar, atau dijumlahkan ke nilai lain."""
+    nilai: Any = None
+    target: Any = None
+    baris: int = 0
+    kolom: int = 0
+
 
 # === I/O ===
 
@@ -156,6 +164,14 @@ class NodeUntukSetiap:
 class NodeUlangi:
     blok: list = field(default_factory=list)
     kondisi: Any = None
+    baris: int = 0
+    kolom: int = 0
+
+@dataclass
+class NodeUlangiKali:
+    """ulangi <jumlah> kali: ..."""
+    jumlah: Any = None
+    blok: list = field(default_factory=list)
     baris: int = 0
     kolom: int = 0
 

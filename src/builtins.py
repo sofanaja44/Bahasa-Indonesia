@@ -30,6 +30,9 @@ def daftar_fungsi_bawaan() -> dict:
         "jumlah": lambda x: sum(x.elemen if isinstance(x, BKDaftar) else x),
         "diurutkan": lambda x: BKDaftar(sorted(x.elemen if isinstance(x, BKDaftar) else x)),
         "dibalik": lambda x: BKDaftar(list(reversed(x.elemen if isinstance(x, BKDaftar) else x))),
+        # Pesan kesalahan untuk 'lempar': lempar Kesalahan("Pembagi tidak boleh nol!")
+        "Kesalahan": _kesalahan,
+        "Error": _kesalahan,
     }
 
 
@@ -58,6 +61,11 @@ def _tampilkan(*args):
 def _cetak(*args):
     """Print tanpa newline."""
     print(" ".join(_ke_teks(a) for a in args), end="")
+
+
+def _kesalahan(pesan=""):
+    """Buat pesan kesalahan; 'lempar' mengubahnya menjadi error yang bisa ditangkap."""
+    return _ke_teks(pesan)
 
 
 def _masukan(prompt=""):

@@ -533,3 +533,197 @@ class TestProgramLengkap:
         tree = ast(kode)
         assert len(tree.pernyataan) == 3
         assert isinstance(tree.pernyataan[0], NodeFungsi)
+
+
+# ============================================================
+# Gaya Natural
+# ============================================================
+
+class TestGayaNaturalDeklarasi:
+    def test_buat_adalah(self):
+        node = ast("buat umur adalah 17").pernyataan[0]
+        assert isinstance(node, NodeDeklarasiVariabel)
+        assert node.nama == "umur"
+        assert node.ekspresi.nilai == 17
+
+    def test_tetap_adalah(self):
+        assert isinstance(ast("tetap PI adalah 3.14").pernyataan[0], NodeKonstanta)
+
+    def test_tipe_eksplisit_adalah(self):
+        assert ast("bilangan umur adalah 17").pernyataan[0].tipe_eksplisit == "bilangan"
+
+    def test_adalah_di_awal_kalimat_mengisi_nilai(self):
+        node = ast("umur adalah 18").pernyataan[0]
+        assert isinstance(node, NodePenugasan)
+        assert node.target.nama == "umur"
+
+    def test_adalah_pada_atribut_dan_elemen(self):
+        assert isinstance(ast("diri.nama adalah nama").pernyataan[0].target, NodeAksesAtribut)
+        assert isinstance(ast("d[0] adalah 5").pernyataan[0].target, NodeAksesDaftar)
+
+    def test_adalah_dalam_kondisi_membandingkan(self):
+        node = ast('jika nama adalah "Budi":\n    tampilkan nama').pernyataan[0]
+        assert node.kondisi.operator == "=="
+
+    def test_buat_tanpa_pengisian_error(self):
+        with pytest.raises(KesalahanSintaks, match="'adalah'"):
+            ast("buat umur 17")
+
+
+class TestGayaNaturalKalimat:
+    def test_ubah_menjadi(self):
+        node = ast("ubah umur menjadi 18").pernyataan[0]
+        assert isinstance(node, NodePenugasan)
+        assert node.target.nama == "umur"
+        assert node.ekspresi.nilai == 18
+
+    def test_ubah_jadi(self):
+        assert isinstance(ast("ubah umur jadi 18").pernyataan[0], NodePenugasan)
+
+    def test_tambahkan_ke(self):
+        node = ast("tambahkan 10 ke skor").pernyataan[0]
+        assert isinstance(node, NodeTambahkan)
+        assert node.nilai.nilai == 10
+        assert node.target.nama == "skor"
+
+    def test_tambahkan_ke_dalam(self):
+        assert ast('tambahkan "apel" ke dalam keranjang').pernyataan[0].target.nama == "keranjang"
+
+    def test_tambahkan_ekspresi_dalam_kurung(self):
+        node = ast("tambahkan (harga dikali 2) ke total").pernyataan[0]
+        assert isinstance(node, NodeTambahkan)
+        assert node.nilai.operator == "*"
+
+    def test_kurangi_dengan_dan_dari(self):
+        for kode in ("kurangi nyawa dengan 1", "kurangi 1 dari nyawa"):
+            node = ast(kode).pernyataan[0]
+            assert isinstance(node, NodePenugasanGabungan)
+            assert node.operator == "-="
+            assert node.target.nama == "nyawa"
+            assert node.ekspresi.nilai == 1
+
+    def test_kalikan_dan_bagi(self):
+        assert ast("kalikan harga dengan 2").pernyataan[0].operator == "*="
+        assert ast("bagi total dengan 4").pernyataan[0].operator == "/="
+
+    def test_kata_kerja_tetap_bisa_jadi_nama(self):
+        """Kompatibilitas: 'tambahkan(5)', 'bagi(10, 2)', 'ubah = 3' bukan kalimat natural."""
+        assert isinstance(ast("tambahkan(5)").pernyataan[0], NodePanggilFungsi)
+        assert isinstance(ast("bagi(10, 2)").pernyataan[0], NodePanggilFungsi)
+        assert isinstance(ast("ubah = 3").pernyataan[0], NodePenugasan)
+
+    def test_kalimat_tidak_lengkap_error(self):
+        with pytest.raises(KesalahanSintaks, match="ubah umur menjadi 18"):
+            ast("ubah umur ke 18")
+
+    def test_target_harus_bisa_diisi(self):
+        with pytest.raises(KesalahanSintaks, match="tidak bisa diberi nilai"):
+            ast("ubah 5 menjadi 3")
+
+
+class TestGayaNaturalKondisi:
+    def test_maka_satu_baris(self):
+        node = ast("jika hujan maka tampilkan 1").pernyataan[0]
+        assert isinstance(node, NodeJika)
+        assert isinstance(node.blok_jika[0], NodeTampilkan)
+
+    def test_koma_maka_blok(self):
+        node = ast("jika hujan, maka:\n    tampilkan 1\n    tampilkan 2").pernyataan[0]
+        assert len(node.blok_jika) == 2
+
+    def test_koma_saja_satu_baris(self):
+        assert len(ast("jika hujan, tampilkan 1").pernyataan[0].blok_jika) == 1
+
+    def test_jika_tidak_sebagai_selainnya(self):
+        tree = ast("jika hujan:\n    tampilkan 1\njika tidak:\n    tampilkan 2")
+        assert len(tree.pernyataan) == 1
+        assert tree.pernyataan[0].blok_selainnya is not None
+
+    def test_kalau_tidak_koma(self):
+        tree = ast("kalau hujan, tampilkan 1\nkalau tidak, tampilkan 2")
+        assert len(tree.pernyataan) == 1
+        assert len(tree.pernyataan[0].blok_selainnya) == 1
+
+    def test_jika_tidak_dengan_kondisi_adalah_jika_baru(self):
+        """'jika tidak lapar:' adalah kondisi baru (bukan lapar), bukan selainnya."""
+        tree = ast("jika kenyang:\n    tampilkan 1\njika tidak lapar:\n    tampilkan 2")
+        assert len(tree.pernyataan) == 2
+        assert tree.pernyataan[1].kondisi.operator == "bukan"
+
+    def test_atau_kalau(self):
+        node = ast("kalau x > 1:\n    tampilkan 1\natau kalau x > 0:\n    tampilkan 2").pernyataan[0]
+        assert len(node.cabang_atau_jika) == 1
+
+    def test_bukan_sebagai_tidak_sama(self):
+        assert ast('jika hari bukan "Minggu": tampilkan 1').pernyataan[0].kondisi.operator == "!="
+
+    def test_habis_dibagi(self):
+        node = ast("x habis dibagi 3").pernyataan[0]
+        assert node.operator == "=="
+        assert node.kiri.operator == "%"
+        assert node.kanan.nilai == 0
+
+    def test_tidak_ada_dalam(self):
+        assert ast("x tidak ada dalam d").pernyataan[0].operator == "tidak ada dalam"
+
+    def test_selainnya_di_pilih(self):
+        node = ast("pilih x:\n    ketika 1: tampilkan 1\n    selainnya: tampilkan 0").pernyataan[0]
+        assert node.bawaan is not None
+
+    def test_tanpa_pembuka_blok_error_ramah(self):
+        with pytest.raises(KesalahanSintaks) as info:
+            ast("jika x > 5\n    tampilkan x")
+        assert "':'" in info.value.pesan
+        assert "TITIK_DUA" not in info.value.pesan
+
+
+class TestGayaNaturalPerulangan:
+    def test_ulangi_kali(self):
+        node = ast("ulangi 3 kali:\n    tampilkan 1").pernyataan[0]
+        assert isinstance(node, NodeUlangiKali)
+        assert node.jumlah.nilai == 3
+
+    def test_ulangi_kali_satu_baris(self):
+        assert isinstance(ast("ulangi 3 kali, tampilkan 1").pernyataan[0], NodeUlangiKali)
+
+    def test_ulangi_tanpa_kali_error(self):
+        with pytest.raises(KesalahanSintaks, match="kali"):
+            ast("ulangi 3:\n    tampilkan 1")
+
+    def test_ulangi_sampai(self):
+        node = ast("ulangi:\n    x += 1\nsampai x adalah 3").pernyataan[0]
+        assert isinstance(node, NodeUlangi)
+        assert node.kondisi.operator == "bukan"  # sampai X = ulangi selama bukan X
+
+    def test_selama_lakukan(self):
+        assert isinstance(ast("selama x kurang dari 3, lakukan:\n    x += 1").pernyataan[0], NodeSelama)
+
+    def test_untuk_setiap_di_dalam(self):
+        assert isinstance(ast("untuk setiap b di dalam buah, tampilkan b").pernyataan[0], NodeUntukSetiap)
+
+
+class TestKetegasanParser:
+    def test_dua_perintah_satu_baris_error(self):
+        """Dulu 'tampilkan 1 tampilkan 2' diam-diam dibaca sebagai dua perintah."""
+        with pytest.raises(KesalahanSintaks, match="berakhir di sini"):
+            ast("tampilkan 1 tampilkan 2")
+
+    def test_penugasan_ke_pemanggilan_fungsi_error(self):
+        with pytest.raises(KesalahanSintaks, match="tidak bisa diberi nilai"):
+            ast("f(x) = 5")
+
+    def test_kata_kunci_sebagai_nama_atribut(self):
+        assert ast("acak.pilih(d)").pernyataan[0].fungsi.atribut == "pilih"
+
+    def test_pangkat_asosiatif_kanan(self):
+        node = ast("2 pangkat 3 pangkat 2").pernyataan[0]
+        assert node.kiri.nilai == 2
+        assert node.kanan.operator == "**"
+
+    def test_kamus_multi_baris(self):
+        node = ast('buat m = {\n    "nama": "Budi",\n    "umur": 20,\n}').pernyataan[0]
+        assert len(node.ekspresi.pasangan) == 2
+
+    def test_indentasi_tak_terduga_error(self):
+        with pytest.raises(KesalahanSintaks, match="menjorok"):
+            ast("tampilkan 1\n    tampilkan 2")

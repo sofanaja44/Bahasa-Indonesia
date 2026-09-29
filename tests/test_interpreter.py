@@ -5,6 +5,7 @@ test_interpreter.py — Unit test untuk Interpreter bahasa Indonesia.
 import pytest
 from io import StringIO
 from contextlib import redirect_stdout
+from pathlib import Path
 
 from src.interpreter import jalankan_kode, Interpreter
 from src.lexer import tokenisasi
@@ -559,3 +560,257 @@ class TestProgramLengkap:
         assert "FizzBuzz" in output
         assert "Fizz" in output
         assert "Buzz" in output
+
+
+# ============================================================
+# Gaya Natural (Bercerita)
+# ============================================================
+
+class TestGayaNaturalNilai:
+    def test_buat_adalah(self):
+        assert tangkap_output('buat nama adalah "Budi"\ntampilkan nama') == "Budi"
+
+    def test_adalah_mengisi_ulang(self):
+        assert tangkap_output("buat x adalah 1\nx adalah x ditambah 1\ntampilkan x") == "2"
+
+    def test_ubah_menjadi(self):
+        kode = "buat umur adalah 17\nubah umur menjadi umur ditambah 1\ntampilkan umur"
+        assert tangkap_output(kode) == "18"
+
+    def test_adalah_membandingkan_dalam_kondisi(self):
+        kode = 'buat nama adalah "Budi"\njika nama adalah "Budi", maka tampilkan "halo Budi"'
+        assert tangkap_output(kode) == "halo Budi"
+
+    def test_adalah_dalam_teks_format_tidak_mengisi(self):
+        kode = 'buat x adalah 1\ntampilkan format"{x adalah 5}"\ntampilkan x'
+        assert tangkap_output(kode) == "salah\n1"
+
+    def test_tambahkan_ke_angka(self):
+        assert tangkap_output("buat skor adalah 10\ntambahkan 5 ke skor\ntampilkan skor") == "15"
+
+    def test_tambahkan_ke_daftar(self):
+        kode = 'buat keranjang adalah ["apel"]\ntambahkan "mangga" ke keranjang\ntampilkan keranjang'
+        assert tangkap_output(kode) == "[apel, mangga]"
+
+    def test_tambahkan_ke_teks(self):
+        kode = 'buat kalimat adalah "Halo"\ntambahkan "!" ke kalimat\ntampilkan kalimat'
+        assert tangkap_output(kode) == "Halo!"
+
+    def test_tambahkan_ke_kamus_error(self):
+        with pytest.raises(KesalahanTipe, match="kamus"):
+            jalankan_kode("buat k adalah {}\ntambahkan 1 ke k")
+
+    def test_kurangi_kalikan_bagi(self):
+        kode = (
+            "buat uang adalah 100\n"
+            "kurangi uang dengan 30\n"
+            "kurangi 10 dari uang\n"
+            "kalikan uang dengan 3\n"
+            "bagi uang dengan 2\n"
+            "tampilkan uang"
+        )
+        assert tangkap_output(kode) == "90.0"
+
+    def test_kalimat_pada_atribut_objek(self):
+        kode = (
+            "kelas Pemain:\n"
+            "    fungsi inisialisasi():\n"
+            "        diri.skor adalah 0\n"
+            "buat p adalah Pemain()\n"
+            "tambahkan 7 ke p.skor\n"
+            "tampilkan p.skor"
+        )
+        assert tangkap_output(kode) == "7"
+
+    def test_kalimat_dalam_blok_satu_baris(self):
+        assert tangkap_output("buat x adalah 0\nulangi 4 kali, tambahkan 2 ke x\ntampilkan x") == "8"
+
+
+class TestGayaNaturalKondisi:
+    def test_jika_maka_jika_tidak(self):
+        kode = (
+            "buat umur adalah 15\n"
+            'jika umur paling sedikit 17, maka tampilkan "dewasa"\n'
+            'jika tidak, tampilkan "anak-anak"'
+        )
+        assert tangkap_output(kode) == "anak-anak"
+
+    def test_kalau_atau_kalau(self):
+        kode = (
+            "buat n adalah 75\n"
+            'kalau n paling sedikit 90: tampilkan "A"\n'
+            'atau kalau n paling sedikit 70: tampilkan "B"\n'
+            'kalau tidak: tampilkan "C"'
+        )
+        assert tangkap_output(kode) == "B"
+
+    def test_tidak_sebagai_bukan(self):
+        kode = 'buat hujan adalah salah\njika tidak hujan maka tampilkan "cerah"'
+        assert tangkap_output(kode) == "cerah"
+
+    def test_perbandingan_natural(self):
+        assert eval_kode("5 tidak sama dengan 3") is True
+        assert eval_kode("5 lebih besar dari 3") is True
+        assert eval_kode("5 lebih kecil dari 3") is False
+        assert eval_kode("5 lebih besar daripada 3") is True
+        assert eval_kode("5 lebih dari atau sama dengan 5") is True
+        assert eval_kode("5 kurang dari atau sama dengan 4") is False
+        assert eval_kode("5 paling sedikit 5") is True
+        assert eval_kode("5 paling banyak 4") is False
+        assert eval_kode("5 adalah 5") is True
+        assert eval_kode("5 bukan 5") is False
+
+    def test_habis_dibagi(self):
+        assert eval_kode("12 habis dibagi 4") is True
+        assert eval_kode("12 habis dibagi 5") is False
+        assert eval_kode("12 tidak habis dibagi 5") is True
+
+    def test_tidak_ada_dalam(self):
+        kode = 'buat buah adalah ["apel"]\ntampilkan "durian" tidak ada dalam buah'
+        assert tangkap_output(kode) == "benar"
+
+    def test_ada_di_dalam(self):
+        assert tangkap_output('tampilkan "a" ada di dalam ["a", "b"]') == "benar"
+
+    def test_fizzbuzz_gaya_natural(self):
+        kode = (
+            "untuk angka dari 1 sampai 15, lakukan:\n"
+            '    jika angka habis dibagi 15, maka tampilkan "FizzBuzz"\n'
+            '    atau jika angka habis dibagi 3, maka tampilkan "Fizz"\n'
+            '    atau jika angka habis dibagi 5, maka tampilkan "Buzz"\n'
+            "    jika tidak, tampilkan angka"
+        )
+        baris = tangkap_output(kode).split("\n")
+        assert baris[:5] == ["1", "2", "Fizz", "4", "Buzz"]
+        assert baris[14] == "FizzBuzz"
+
+
+class TestGayaNaturalPerulangan:
+    def test_ulangi_kali(self):
+        assert tangkap_output('ulangi 3 kali:\n    tampilkan "hore"') == "hore\nhore\nhore"
+
+    def test_ulangi_kali_dengan_berhenti(self):
+        kode = (
+            "buat n adalah 0\n"
+            "ulangi 10 kali:\n"
+            "    tambahkan 1 ke n\n"
+            "    jika n adalah 4, maka berhenti\n"
+            "tampilkan n"
+        )
+        assert tangkap_output(kode) == "4"
+
+    def test_ulangi_kali_hasil_bagi_bulat(self):
+        assert tangkap_output("ulangi 4 dibagi 2 kali, tampilkan 1") == "1\n1"
+
+    def test_ulangi_kali_bukan_bilangan_error(self):
+        with pytest.raises(KesalahanTipe, match="bilangan bulat"):
+            jalankan_kode('ulangi "tiga" kali: tampilkan 1')
+
+    def test_ulangi_sampai(self):
+        kode = (
+            "buat hitung adalah 3\n"
+            "ulangi:\n"
+            "    tampilkan hitung\n"
+            "    kurangi hitung dengan 1\n"
+            "sampai hitung adalah 0"
+        )
+        assert tangkap_output(kode) == "3\n2\n1"
+
+    def test_selama_lakukan(self):
+        kode = "buat x adalah 0\nselama x kurang dari 3, lakukan:\n    tambahkan 1 ke x\ntampilkan x"
+        assert tangkap_output(kode) == "3"
+
+    def test_untuk_setiap_kamus(self):
+        kode = 'buat harga adalah {"apel": 1, "jeruk": 2}\nuntuk setiap buah dalam harga, tampilkan buah'
+        assert tangkap_output(kode) == "apel\njeruk"
+
+    def test_untuk_setiap_bukan_koleksi_error(self):
+        with pytest.raises(KesalahanTipe, match="untuk setiap"):
+            jalankan_kode("untuk setiap x dalam 5: tampilkan x")
+
+
+# ============================================================
+# Perbaikan bug
+# ============================================================
+
+class TestPerbaikanBug:
+    def test_penugasan_gabungan_pada_atribut(self):
+        """Dulu 'a.skor += 10' dihitung tetapi tidak pernah disimpan."""
+        kode = (
+            "kelas A:\n"
+            "    fungsi inisialisasi():\n"
+            "        diri.skor = 1\n"
+            "buat a = A()\n"
+            "a.skor += 10\n"
+            "tampilkan a.skor"
+        )
+        assert tangkap_output(kode) == "11"
+
+    def test_penugasan_gabungan_pada_elemen_daftar(self):
+        assert tangkap_output("buat d = [1, 2]\nd[0] += 10\ntampilkan d") == "[11, 2]"
+
+    def test_penugasan_indeks_di_luar_batas(self):
+        with pytest.raises(KesalahanIndeks):
+            jalankan_kode("buat d = [1]\nd[10] = 1")
+
+    def test_induk_memanggil_metode_kelas_induk(self):
+        kode = (
+            "kelas Hewan:\n"
+            "    fungsi inisialisasi(nama, suara):\n"
+            "        diri.nama = nama\n"
+            "        diri.suara = suara\n"
+            "kelas Anjing mewarisi Hewan:\n"
+            "    fungsi inisialisasi(nama):\n"
+            '        induk.inisialisasi(nama, "Guk!")\n'
+            'buat a = Anjing("Rex")\n'
+            "tampilkan a.nama, a.suara"
+        )
+        assert tangkap_output(kode) == "Rex Guk!"
+
+    def test_super_tetap_didukung(self):
+        kode = (
+            "kelas A:\n"
+            "    fungsi info():\n"
+            '        kembalikan "A"\n'
+            "kelas B mewarisi A:\n"
+            "    fungsi info():\n"
+            '        kembalikan super.info() + "B"\n'
+            "tampilkan B().info()"
+        )
+        assert tangkap_output(kode) == "AB"
+
+    def test_lempar_kesalahan(self):
+        kode = 'coba:\n    lempar Kesalahan("Pembagi nol!")\ntangkap sebagai e:\n    tampilkan e'
+        assert tangkap_output(kode) == "Pembagi nol!"
+
+    def test_lempar_error_seperti_prd(self):
+        kode = 'coba:\n    lempar Error("Pembagi nol!")\ntangkap sebagai e:\n    tampilkan e'
+        assert tangkap_output(kode) == "Pembagi nol!"
+
+    def test_fungsi_anonim_dengan_kembalikan(self):
+        assert tangkap_output("buat kuadrat = fungsi(x): kembalikan x * x\ntampilkan kuadrat(4)") == "16"
+
+    def test_teks_format_dengan_spasi(self):
+        assert tangkap_output('buat x = 3\ntampilkan format"{ x }"') == "3"
+
+    def test_tampilkan_tanpa_nilai_mencetak_baris_kosong(self):
+        buf = StringIO()
+        with redirect_stdout(buf):
+            jalankan_kode('tampilkan "a"\ntampilkan\ntampilkan "b"')
+        assert buf.getvalue() == "a\n\nb\n"
+
+
+# ============================================================
+# Semua program contoh harus berjalan tanpa error
+# ============================================================
+
+FOLDER_CONTOH = Path(__file__).resolve().parent.parent / "contoh"
+
+
+@pytest.mark.parametrize("berkas", sorted(FOLDER_CONTOH.glob("*.id")), ids=lambda p: p.name)
+def test_program_contoh_berjalan(berkas):
+    kode = berkas.read_text(encoding="utf-8")
+    buf = StringIO()
+    with redirect_stdout(buf):
+        jalankan_kode(kode)
+    assert buf.getvalue().strip()

@@ -110,6 +110,10 @@ class BKKamus:
     def __contains__(self, key):
         return key in self.data
 
+    def __iter__(self):
+        """'untuk setiap kunci dalam kamus' menelusuri kunci-kuncinya."""
+        return iter(self.data)
+
     def __getitem__(self, key):
         return self.data[key]
 
@@ -156,6 +160,7 @@ class BKFungsi:
         self.blok = blok
         self.lingkungan = lingkungan  # closure scope
         self.node = node
+        self.kelas = None  # kelas pemilik, jika fungsi ini adalah metode
 
     def __repr__(self):
         return f"<fungsi {self.nama}>"
@@ -223,3 +228,20 @@ class BKMetodeTerikat:
 
     def __repr__(self):
         return f"<metode {self.fungsi.nama} dari {self.instansi.kelas.nama}>"
+
+
+class BKInduk:
+    """Akses metode kelas induk dari dalam metode: induk.inisialisasi(...)."""
+
+    def __init__(self, instansi: BKInstansi, kelas: BKKelas):
+        self.instansi = instansi
+        self.kelas = kelas  # kelas induk, tempat pencarian metode dimulai
+
+    def __repr__(self):
+        return f"<induk {self.kelas.nama}>"
+
+    def dapatkan(self, nama: str):
+        metode = self.kelas.cari_metode(nama)
+        if metode is not None:
+            return BKMetodeTerikat(self.instansi, metode)
+        return None

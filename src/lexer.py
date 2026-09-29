@@ -6,10 +6,13 @@ Mendukung:
   - Angka (integer & desimal)
   - Teks/string (kutip ganda & tunggal) + escape sequences
   - F-string: f"Halo {nama}"
-  - Identifier & kata kunci (termasuk multi-kata: "atau jika", "untuk setiap")
+  - Identifier & kata kunci, termasuk frasa multi-kata ("atau jika",
+    "untuk setiap", "tidak sama dengan", "paling sedikit", ...)
   - Operator & tanda baca
   - Komentar (#) dan komentar multi-baris (triple quote)
   - Indentasi berbasis spasi (INDENT / DEDENT)
+  - Baris baru di dalam kurung (), [], {} diabaikan, sehingga daftar/kamus
+    boleh ditulis dalam beberapa baris
   - Pelacakan posisi (baris, kolom) untuk pesan error
 """
 
@@ -18,7 +21,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from src.token_types import TokenType, KATA_KUNCI, OPERATORS, PUNCTUATION
+from src.token_types import (
+    TokenType, KATA_KUNCI, OPERATORS, PUNCTUATION,
+    FRASA_KATA_KUNCI, PANJANG_FRASA_MAKS, AWALAN_FRASA,
+)
 from src.errors import KesalahanSintaks
 
 
@@ -54,6 +60,7 @@ class Lexer:
         self.tokens: List[Token] = []
         self.indent_stack: List[int] = [0]  # stack level indentasi
         self.awal_baris = True      # apakah kita di awal baris baru?
+        self.kedalaman_kurung = 0   # jumlah (, [, { yang belum ditutup
         self.daftar_baris = kode_sumber.split("\n")
 
     # ----------------------------------------------------------
@@ -120,7 +127,10 @@ class Lexer:
         """Proses seluruh kode sumber → daftar token."""
         while self.karakter is not None:
             # === Awal baris → proses indentasi ===
-            if self.awal_baris:
+            if self.awal_baris and self.kedalaman_kurung > 0:
+                # Lanjutan isi kurung di baris baru: indentasinya tidak berarti apa-apa
+                self.awal_baris = False
+            elif self.awal_baris:
                 self._proses_indentasi()
                 if self.karakter is None:
                     break
@@ -131,9 +141,10 @@ class Lexer:
 
             ch = self.karakter
 
-            # === Newline ===
+            # === Newline (diabaikan jika masih di dalam kurung) ===
             if ch == "\n":
-                self._tambah(TokenType.BARIS_BARU, "\\n", self.baris, self.kolom)
+                if self.kedalaman_kurung == 0:
+                    self._tambah(TokenType.BARIS_BARU, "\\n", self.baris, self.kolom)
                 self.maju()
                 continue
 
@@ -186,6 +197,10 @@ class Lexer:
 
             # === Tanda baca ===
             if ch in PUNCTUATION:
+                if ch in "([{":
+                    self.kedalaman_kurung += 1
+                elif ch in ")]}":
+                    self.kedalaman_kurung = max(0, self.kedalaman_kurung - 1)
                 self._tambah(PUNCTUATION[ch], ch, self.baris, self.kolom)
                 self.maju()
                 continue
@@ -445,7 +460,7 @@ class Lexer:
     # ----------------------------------------------------------
 
     def _baca_identifier(self):
-        """Baca identifier atau kata kunci, termasuk kata kunci multi-kata."""
+        """Baca identifier, kata kunci, atau frasa kata kunci multi-kata."""
         baris_awal = self.baris
         kolom_awal = self.kolom
         bagian = []
@@ -456,131 +471,49 @@ class Lexer:
 
         kata = "".join(bagian)
 
-        # === Look-ahead untuk kata kunci multi-kata ===
-
-        # "atau jika" → ATAU_JIKA
-        if kata == "atau":
-            kata_kedua = self._intip_kata_depan()
-            if kata_kedua == "jika":
-                self._lewati_spasi_horizontal()
-                self._konsumsi_kata("jika")
-                self._tambah(TokenType.ATAU_JIKA, "atau jika", baris_awal, kolom_awal)
-                return
-
-        # "untuk setiap" → UNTUK_SETIAP
-        if kata == "untuk":
-            kata_kedua = self._intip_kata_depan()
-            if kata_kedua == "setiap":
-                self._lewati_spasi_horizontal()
-                self._konsumsi_kata("setiap")
-                self._tambah(TokenType.UNTUK_SETIAP, "untuk setiap", baris_awal, kolom_awal)
-                return
-
-        # "sama dengan" → SAMA_DENGAN_OP (==)
-        if kata == "sama":
-            kata_kedua = self._intip_kata_depan()
-            if kata_kedua == "dengan":
-                self._lewati_spasi_horizontal()
-                self._konsumsi_kata("dengan")
-                self._tambah(TokenType.SAMA_DENGAN_OP, "sama dengan", baris_awal, kolom_awal)
-                return
-
-        # "tidak sama" / "tidak kurang dari" / "tidak lebih dari"
-        if kata == "tidak":
-            kata_kedua = self._intip_kata_depan()
-            if kata_kedua == "sama":
-                self._lewati_spasi_horizontal()
-                self._konsumsi_kata("sama")
-                self._tambah(TokenType.TIDAK_SAMA_OP, "tidak sama", baris_awal, kolom_awal)
-                return
-            if kata_kedua == "kurang":
-                simpan_pos2 = self.pos
-                simpan_baris2 = self.baris
-                simpan_kolom2 = self.kolom
-                self._lewati_spasi_horizontal()
-                self._konsumsi_kata("kurang")
-                kata_ketiga = self._intip_kata_depan()
-                if kata_ketiga == "dari":
-                    self._lewati_spasi_horizontal()
-                    self._konsumsi_kata("dari")
-                    self._tambah(TokenType.TIDAK_KURANG_DARI, "tidak kurang dari", baris_awal, kolom_awal)
-                    return
-                # Rollback jika bukan "tidak kurang dari"
-                self.pos = simpan_pos2
-                self.baris = simpan_baris2
-                self.kolom = simpan_kolom2
-            if kata_kedua == "lebih":
-                simpan_pos2 = self.pos
-                simpan_baris2 = self.baris
-                simpan_kolom2 = self.kolom
-                self._lewati_spasi_horizontal()
-                self._konsumsi_kata("lebih")
-                kata_ketiga = self._intip_kata_depan()
-                if kata_ketiga == "dari":
-                    self._lewati_spasi_horizontal()
-                    self._konsumsi_kata("dari")
-                    self._tambah(TokenType.TIDAK_LEBIH_DARI, "tidak lebih dari", baris_awal, kolom_awal)
-                    return
-                # Rollback jika bukan "tidak lebih dari"
-                self.pos = simpan_pos2
-                self.baris = simpan_baris2
-                self.kolom = simpan_kolom2
-
-        # "lebih dari" → LEBIH_DARI (>)
-        if kata == "lebih":
-            kata_kedua = self._intip_kata_depan()
-            if kata_kedua == "dari":
-                self._lewati_spasi_horizontal()
-                self._konsumsi_kata("dari")
-                self._tambah(TokenType.LEBIH_DARI, "lebih dari", baris_awal, kolom_awal)
-                return
-
-        # "kurang dari" → KURANG_DARI (<)
-        if kata == "kurang":
-            kata_kedua = self._intip_kata_depan()
-            if kata_kedua == "dari":
-                self._lewati_spasi_horizontal()
-                self._konsumsi_kata("dari")
-                self._tambah(TokenType.KURANG_DARI, "kurang dari", baris_awal, kolom_awal)
-                return
-
-        # "sisa bagi" → SISA_BAGI (%)
-        if kata == "sisa":
-            kata_kedua = self._intip_kata_depan()
-            if kata_kedua == "bagi":
-                self._lewati_spasi_horizontal()
-                self._konsumsi_kata("bagi")
-                self._tambah(TokenType.SISA_BAGI, "sisa bagi", baris_awal, kolom_awal)
-                return
-
-        # "pangkat" → PANGKAT_KK (**) sebagai kata kunci infix
-        if kata == "pangkat":
-            self._tambah(TokenType.PANGKAT_KK, "pangkat", baris_awal, kolom_awal)
+        # Frasa multi-kata: "atau jika", "tidak sama dengan", "paling sedikit", ...
+        if kata in AWALAN_FRASA and self._coba_frasa(kata, baris_awal, kolom_awal):
             return
 
-        # Cek apakah kata adalah kata kunci
-        if kata in KATA_KUNCI:
-            self._tambah(KATA_KUNCI[kata], kata, baris_awal, kolom_awal)
-        else:
-            self._tambah(TokenType.IDENTIFIER, kata, baris_awal, kolom_awal)
+        self._tambah(KATA_KUNCI.get(kata, TokenType.IDENTIFIER), kata, baris_awal, kolom_awal)
 
-    def _intip_kata_depan(self) -> str | None:
-        """Intip kata berikutnya tanpa memajukan posisi.
+    def _coba_frasa(self, kata_pertama: str, baris: int, kolom: int) -> bool:
+        """Cocokkan frasa kata kunci terpanjang yang diawali `kata_pertama`.
 
-        Melewati spasi horizontal (spasi/tab) lalu membaca kata
-        alfanumerik berikutnya. Mengembalikan None jika tidak ada kata.
+        Jika cocok, kata-kata lanjutan frasa dikonsumsi dan satu token
+        dikeluarkan. Jika tidak, posisi lexer tidak berubah.
         """
+        kandidat = [kata_pertama] + self._intip_kata_berikutnya(PANJANG_FRASA_MAKS - 1)
+        for panjang in range(len(kandidat), 1, -1):
+            frasa = tuple(kandidat[:panjang])
+            tipe = FRASA_KATA_KUNCI.get(frasa)
+            if tipe is None:
+                continue
+            for kata in frasa[1:]:
+                self._lewati_spasi_horizontal()
+                self._konsumsi_kata(kata)
+            self._tambah(tipe, " ".join(frasa), baris, kolom)
+            return True
+        return False
+
+    def _intip_kata_berikutnya(self, jumlah: int) -> List[str]:
+        """Intip hingga `jumlah` kata berikutnya pada baris yang sama.
+
+        Hanya spasi/tab yang dilewati; berhenti di tanda baca atau baris baru.
+        Posisi lexer tidak dimajukan.
+        """
+        kata_kata = []
         idx = self.pos
-        # Lewati spasi horizontal
-        while idx < len(self.sumber) and self.sumber[idx] in (" ", "\t"):
-            idx += 1
-        # Baca kata
-        mulai = idx
-        while idx < len(self.sumber) and (self.sumber[idx].isalnum() or self.sumber[idx] == "_"):
-            idx += 1
-        if idx == mulai:
-            return None
-        return self.sumber[mulai:idx]
+        while len(kata_kata) < jumlah:
+            while idx < len(self.sumber) and self.sumber[idx] in (" ", "\t"):
+                idx += 1
+            mulai = idx
+            while idx < len(self.sumber) and (self.sumber[idx].isalnum() or self.sumber[idx] == "_"):
+                idx += 1
+            if idx == mulai:
+                break
+            kata_kata.append(self.sumber[mulai:idx])
+        return kata_kata
 
     def _lewati_spasi_horizontal(self):
         """Lewati spasi dan tab (bukan newline)."""
