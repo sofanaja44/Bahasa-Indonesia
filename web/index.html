@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
+  <title>Editor Bahasa Indonesia</title>
+  <meta name="description" content="Tulis dan jalankan program dalam Bahasa Pemrograman Indonesia langsung di browser, tanpa memasang apa pun.">
+  <meta name="theme-color" content="#d7141a">
+  <link rel="icon" href="ikon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="ikon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="gaya.css?v=__VERSI__">
+  <script type="module" src="aplikasi.js?v=__VERSI__"></script>
+</head>
+<body>
+  <header class="kepala">
+    <a class="merek" href="./" title="Editor Bahasa Indonesia">
+      <span class="bendera" aria-hidden="true"></span>
+      <span class="nama-merek">Bahasa Indonesia</span>
+    </a>
+    <div class="aksi">
+      <select id="pilih-contoh" aria-label="Buka contoh program">
+        <option value="">📂 Contoh</option>
+      </select>
+      <button id="tombol-bagikan" type="button" class="tombol" title="Bagikan program lewat tautan">🔗 Bagikan</button>
+      <button id="tombol-hentikan" type="button" class="tombol tombol-hentikan" hidden>■ Hentikan</button>
+      <button id="tombol-jalankan" type="button" class="tombol tombol-utama" disabled title="Jalankan (Ctrl+Enter)">Memuat…</button>
+    </div>
+  </header>
+
+  <main class="ruang-kerja">
+    <section class="panel panel-editor" aria-label="Editor kode">
+      <div class="editor">
+        <pre class="sorotan" aria-hidden="true"><code id="sorotan"></code></pre>
+        <textarea id="kode" aria-label="Kode program" spellcheck="false" autocapitalize="off"
+                  autocomplete="off" autocorrect="off"></textarea>
+      </div>
+      <div class="bilah-ketik" role="toolbar" aria-label="Tombol bantu mengetik">
+        <button type="button" data-sisip="tab" aria-label="Menjorokkan baris">⇥</button>
+        <button type="button" data-sisip="untab" aria-label="Mengurangi jorokan">⇤</button>
+        <button type="button" data-sisip="&quot;">"</button>
+        <button type="button" data-sisip=":">:</button>
+        <button type="button" data-sisip="(">(</button>
+        <button type="button" data-sisip=")">)</button>
+        <button type="button" data-sisip="[">[</button>
+        <button type="button" data-sisip="]">]</button>
+      </div>
+    </section>
+
+    <section class="panel panel-keluaran" aria-label="Keluaran program">
+      <div class="kepala-panel">
+        <span>Keluaran</span>
+        <button id="tombol-bersihkan" type="button" class="tombol-kecil">Bersihkan</button>
+      </div>
+      <div id="keluaran" class="keluaran" role="log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="kaki">
+    <span id="status" class="status" role="status">Menyiapkan Python di browser…</span>
+    <span class="tautan-kaki">
+      <a href="https://github.com/sofanaja44/Bahasa-Indonesia#readme" target="_blank" rel="noopener">Panduan</a>
+      · <a href="https://github.com/sofanaja44/Bahasa-Indonesia" target="_blank" rel="noopener">GitHub</a>
+      · v__VERSI_BAHASA__
+    </span>
+  </footer>
+
+  <div id="pemberitahuan" class="pemberitahuan" role="alert" hidden></div>
+
+  <noscript>
+    <p class="tanpa-js">Editor ini membutuhkan JavaScript. Aktifkan JavaScript di pengaturan browser Anda.</p>
+  </noscript>
+</body>
+</html>

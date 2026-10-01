@@ -24,3 +24,33 @@ jobs:
         run: python -m pytest tests/ -q
         env:
           PYTHONIOENCODING: utf-8
+
+  web:
+    name: Editor web (Pyodide + Chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Simpan unduhan Pyodide
+        uses: actions/cache@v4
+        with:
+          path: web/.cache
+          key: pyodide-${{ hashFiles('web/bangun.py') }}
+      - name: Bangun situs
+        run: python web/bangun.py
+      - name: Pasang Playwright dan Chromium
+        working-directory: web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Tes kesesuaian di Pyodide
+        run: node web/tes/tes_pyodide.mjs
+      - name: Tes editor di Chromium
+        run: node --test --test-concurrency=1 --test-reporter=spec web/tes/tes_editor.mjs
