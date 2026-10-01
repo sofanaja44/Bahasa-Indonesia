@@ -8,7 +8,7 @@ bangun.py — Membangun editor web Bahasa Indonesia ke folder web/situs/.
 Isi situs:
     index.html, gaya.css, *.js     dari folder web/
     interpreter.zip                src/*.py + web/jembatan.py, dimuat ke Pyodide
-    kosakata.json                  kata kunci untuk pewarnaan kode (dari src/token_types.py)
+    kosakata.json                  kata kunci untuk pewarnaan kode (dari src/kosakata.py)
     contoh.json                    program di folder contoh/
     pyodide/                       Python dalam WebAssembly, diunduh dari registri npm
 
@@ -39,8 +39,7 @@ CACHE = WEB / ".cache"
 
 sys.path.insert(0, str(AKAR))
 
-from src.builtins import daftar_fungsi_bawaan  # noqa: E402
-from src.token_types import FRASA_KATA_KUNCI, KATA_KUNCI  # noqa: E402
+from src.kosakata import kosakata  # noqa: E402
 
 # Versi Pyodide dan sidik jarinya (dist.integrity di registri npm).
 # Untuk memperbarui: npm view pyodide@VERSI dist.integrity
@@ -62,45 +61,6 @@ JUDUL_CONTOH = {
     "cerita": "Cerita Petualangan",
     "demo_lengkap": "Tur Lengkap Bahasa",
 }
-
-# Kelas warna untuk pewarnaan kode, berdasarkan jenis token.
-_KELAS_TOKEN = {
-    "nilai": {"BENAR", "SALAH", "KOSONG", "WAKTU_SEKARANG", "ANGKA_ACAK", "DIRI", "SUPER"},
-    "tipe": {"BILANGAN", "TEKS_TIPE", "LOGIKA_TIPE", "DESIMAL_TIPE"},
-    "operator": {
-        "DAN", "ATAU", "BUKAN", "ADA", "TIDAK_ADA", "DITAMBAH", "DIKURANG", "DIKALI", "DIBAGI",
-        "PANGKAT_KK", "SISA_BAGI", "HABIS_DIBAGI", "TIDAK_HABIS_DIBAGI", "SAMA_DENGAN_OP", "TIDAK_SAMA_OP",
-        "LEBIH_DARI", "KURANG_DARI", "TIDAK_KURANG_DARI", "TIDAK_LEBIH_DARI",
-    },
-}
-
-# Kata kerja natural yang tidak dicadangkan; diwarnai hanya di awal perintah,
-# bersama kata sambungannya (lihat sorotan.js).
-KATA_PERINTAH = {
-    "ubah": ["menjadi"],
-    "tambahkan": ["ke"],
-    "kurangi": ["dengan", "dari"],
-    "kalikan": ["dengan"],
-    "bagi": ["dengan"],
-    "tunggu": ["detik", "menit"],
-}
-
-
-def _kelas(tipe) -> str:
-    for kelas, nama in _KELAS_TOKEN.items():
-        if tipe.name in nama:
-            return kelas
-    return "kunci"
-
-
-def kosakata() -> dict:
-    return {
-        "kata_kunci": {kata: _kelas(tipe) for kata, tipe in sorted(KATA_KUNCI.items())},
-        "frasa": {" ".join(frasa): _kelas(tipe) for frasa, tipe in sorted(FRASA_KATA_KUNCI.items())},
-        "kata_perintah": KATA_PERINTAH,
-        "fungsi_bawaan": sorted(daftar_fungsi_bawaan()),
-    }
-
 
 def daftar_contoh() -> list:
     urutan = list(JUDUL_CONTOH)

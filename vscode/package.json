@@ -1,0 +1,101 @@
+{
+  "name": "bahasa-indonesia",
+  "displayName": "Bahasa Pemrograman Indonesia",
+  "description": "Pewarnaan kode, potongan kode, dan tombol Jalankan untuk Bahasa Pemrograman Indonesia (berkas .id).",
+  "version": "0.1.0",
+  "publisher": "sofanaja44",
+  "license": "MIT",
+  "icon": "ikon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sofanaja44/Bahasa-Indonesia"
+  },
+  "homepage": "https://github.com/sofanaja44/Bahasa-Indonesia#readme",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Programming Languages", "Snippets", "Education"],
+  "keywords": ["indonesia", "bahasa indonesia", "pemrograman", "belajar", "id"],
+  "main": "./extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "indonesia",
+        "aliases": ["Bahasa Indonesia", "indonesia"],
+        "extensions": [".id"],
+        "configuration": "./language-configuration.json",
+        "icon": { "light": "./ikon.png", "dark": "./ikon.png" }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "indonesia",
+        "scopeName": "source.indonesia",
+        "path": "./syntaxes/indonesia.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "indonesia",
+        "path": "./snippets/indonesia.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "bahasaIndonesia.jalankan",
+        "title": "Jalankan Program",
+        "category": "Bahasa Indonesia",
+        "icon": "$(play)"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "bahasaIndonesia.jalankan",
+          "when": "resourceLangId == indonesia"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "bahasaIndonesia.jalankan",
+          "when": "editorLangId == indonesia"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "bahasaIndonesia.jalankan",
+        "key": "ctrl+f5",
+        "mac": "cmd+f5",
+        "when": "editorLangId == indonesia"
+      }
+    ],
+    "configuration": {
+      "title": "Bahasa Indonesia",
+      "properties": {
+        "bahasaIndonesia.perintah": {
+          "type": "string",
+          "default": "indonesia",
+          "markdownDescription": "Perintah untuk menjalankan program. Bawaannya `indonesia` (aplikasi dari halaman Releases yang sudah ada di PATH). Bisa juga, misalnya, `python C:/Bahasa-Indonesia/indonesia.py`."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[indonesia]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.detectIndentation": false
+      }
+    }
+  },
+  "scripts": {
+    "tes": "node --test tes/tes_grammar.mjs",
+    "kemas": "vsce package"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "4.0.0",
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.3.2"
+  }
+}

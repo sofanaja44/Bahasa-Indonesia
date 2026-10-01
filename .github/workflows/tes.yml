@@ -54,3 +54,27 @@ jobs:
         run: node web/tes/tes_pyodide.mjs
       - name: Tes editor di Chromium
         run: node --test --test-concurrency=1 --test-reporter=spec web/tes/tes_editor.mjs
+
+  vscode:
+    name: Ekstensi VS Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
+      - name: Pasang dependensi
+        working-directory: vscode
+        run: npm ci
+      - name: Tes pewarnaan kode
+        working-directory: vscode
+        run: node --test --test-reporter=spec tes/tes_grammar.mjs
+      - name: Kemas ekstensi
+        working-directory: vscode
+        run: npx vsce package --out bahasa-indonesia.vsix
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bahasa-indonesia.vsix
+          path: vscode/bahasa-indonesia.vsix

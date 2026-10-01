@@ -1,0 +1,77 @@
+{
+  "tampilkan": {
+    "prefix": "tampilkan",
+    "body": "tampilkan ${1:\"Halo Dunia!\"}",
+    "description": "Tampilkan teks atau nilai di layar"
+  },
+  "buat": {
+    "prefix": "buat",
+    "body": "buat ${1:nama} adalah ${2:nilai}",
+    "description": "Buat variabel baru"
+  },
+  "tanya": {
+    "prefix": "tanya",
+    "body": "buat ${1:nama} adalah tanya \"${2:Siapa namamu? }\"",
+    "description": "Tanyakan sesuatu kepada pengguna"
+  },
+  "tanya angka": {
+    "prefix": "tanya angka",
+    "body": "buat ${1:umur} adalah tanya angka \"${2:Berapa umurmu? }\"",
+    "description": "Tanyakan angka kepada pengguna (bertanya ulang sampai jawabannya angka)"
+  },
+  "jika": {
+    "prefix": "jika",
+    "body": ["jika ${1:kondisi}:", "\t$0"],
+    "description": "Percabangan: jalankan blok bila kondisinya benar"
+  },
+  "jika ... jika tidak": {
+    "prefix": "jika tidak",
+    "body": ["jika ${1:kondisi}:", "\t${2:tampilkan \"ya\"}", "jika tidak:", "\t${0:tampilkan \"tidak\"}"],
+    "description": "Percabangan dengan pilihan lain"
+  },
+  "selama": {
+    "prefix": "selama",
+    "body": ["selama ${1:kondisi} lakukan:", "\t$0"],
+    "description": "Ulangi selama kondisinya benar"
+  },
+  "ulangi kali": {
+    "prefix": "ulangi",
+    "body": ["ulangi ${1:3} kali:", "\t$0"],
+    "description": "Ulangi sebanyak beberapa kali"
+  },
+  "untuk setiap": {
+    "prefix": "untuk setiap",
+    "body": ["untuk setiap ${1:buah} dalam ${2:keranjang}, lakukan:", "\t$0"],
+    "description": "Telusuri setiap isi daftar, kamus, atau teks"
+  },
+  "untuk dari sampai": {
+    "prefix": "untuk",
+    "body": ["untuk ${1:i} dari ${2:1} sampai ${3:10}:", "\t$0"],
+    "description": "Hitung dari satu angka sampai angka lain"
+  },
+  "fungsi": {
+    "prefix": "fungsi",
+    "body": ["fungsi ${1:nama}(${2:parameter}):", "\t$0"],
+    "description": "Buat fungsi"
+  },
+  "kelas": {
+    "prefix": "kelas",
+    "body": ["kelas ${1:Hewan}:", "\tfungsi inisialisasi(diri, ${2:nama}):", "\t\tdiri.${2:nama} = ${2:nama}", "\t$0"],
+    "description": "Buat kelas"
+  },
+  "pilih": {
+    "prefix": "pilih",
+    "body": ["pilih ${1:hari}:", "\tketika ${2:\"Sabtu\" atau \"Minggu\"}:", "\t\t${3:tampilkan \"Libur!\"}", "\tbawaan:", "\t\t${0:tampilkan \"Sekolah\"}"],
+    "description": "Pilih blok sesuai nilainya"
+  },
+  "coba": {
+    "prefix": "coba",
+    "body": ["coba:", "\t${1:buat hasil adalah 10 dibagi 0}", "tangkap kesalahan:", "\t${0:tampilkan \"Ups:\", kesalahan}"],
+    "description": "Tangani kesalahan agar program tidak berhenti"
+  },
+  "angka acak": {
+    "prefix": "acak",
+    "body": "buat ${1:dadu} adalah angka acak dari ${2:1} sampai ${3:6}",
+    "description": "Ambil angka acak"
+  }
+}

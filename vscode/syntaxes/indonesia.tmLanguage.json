@@ -1,0 +1,396 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Bahasa Indonesia",
+  "scopeName": "source.indonesia",
+  "comment": "Dibuat oleh vscode/bangun.py dari src/kosakata.py. Jangan diubah langsung.",
+  "patterns": [
+    {
+      "include": "#perintah-natural"
+    },
+    {
+      "include": "#isi"
+    }
+  ],
+  "repository": {
+    "isi": {
+      "patterns": [
+        {
+          "include": "#komentar"
+        },
+        {
+          "include": "#teks"
+        },
+        {
+          "include": "#angka"
+        },
+        {
+          "include": "#definisi"
+        },
+        {
+          "include": "#tanya"
+        },
+        {
+          "include": "#frasa"
+        },
+        {
+          "include": "#kata-kunci"
+        },
+        {
+          "include": "#fungsi-bawaan"
+        }
+      ]
+    },
+    "perintah-natural": {
+      "patterns": [
+        {
+          "begin": "^[ \\t]*(ubah)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.indonesia"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "match": "\\b(?:menjadi)\\b",
+              "name": "keyword.control.indonesia"
+            },
+            {
+              "include": "#isi"
+            }
+          ]
+        },
+        {
+          "begin": "^[ \\t]*(tambahkan)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.indonesia"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "match": "\\b(?:ke)\\b",
+              "name": "keyword.control.indonesia"
+            },
+            {
+              "include": "#isi"
+            }
+          ]
+        },
+        {
+          "begin": "^[ \\t]*(kurangi)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.indonesia"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "match": "\\b(?:dengan|dari)\\b",
+              "name": "keyword.control.indonesia"
+            },
+            {
+              "include": "#isi"
+            }
+          ]
+        },
+        {
+          "begin": "^[ \\t]*(kalikan)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.indonesia"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "match": "\\b(?:dengan)\\b",
+              "name": "keyword.control.indonesia"
+            },
+            {
+              "include": "#isi"
+            }
+          ]
+        },
+        {
+          "begin": "^[ \\t]*(bagi)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.indonesia"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "match": "\\b(?:dengan)\\b",
+              "name": "keyword.control.indonesia"
+            },
+            {
+              "include": "#isi"
+            }
+          ]
+        },
+        {
+          "begin": "^[ \\t]*(tunggu)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.indonesia"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "match": "\\b(?:detik|menit)\\b",
+              "name": "keyword.control.indonesia"
+            },
+            {
+              "include": "#isi"
+            }
+          ]
+        },
+        {
+          "begin": "^[ \\t]*(ulangi)\\b",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.indonesia"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "match": "\\bkali\\b",
+              "name": "keyword.control.indonesia"
+            },
+            {
+              "include": "#isi"
+            }
+          ]
+        }
+      ]
+    },
+    "komentar": {
+      "patterns": [
+        {
+          "name": "comment.block.indonesia",
+          "begin": "\"\"\"",
+          "end": "\"\"\""
+        },
+        {
+          "name": "comment.line.number-sign.indonesia",
+          "match": "#.*$"
+        }
+      ]
+    },
+    "teks": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.format.indonesia",
+          "begin": "\\b(f|format)(\")",
+          "end": "(\")|$",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.end.indonesia"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escape"
+            },
+            {
+              "include": "#sisipan"
+            }
+          ],
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.string.indonesia"
+            },
+            "2": {
+              "name": "punctuation.definition.string.begin.indonesia"
+            }
+          }
+        },
+        {
+          "name": "string.quoted.single.format.indonesia",
+          "begin": "\\b(f|format)(')",
+          "end": "(')|$",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.end.indonesia"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escape"
+            },
+            {
+              "include": "#sisipan"
+            }
+          ],
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.string.indonesia"
+            },
+            "2": {
+              "name": "punctuation.definition.string.begin.indonesia"
+            }
+          }
+        },
+        {
+          "name": "string.quoted.double.indonesia",
+          "begin": "\"",
+          "end": "(\")|$",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.end.indonesia"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escape"
+            }
+          ],
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.indonesia"
+            }
+          }
+        },
+        {
+          "name": "string.quoted.single.indonesia",
+          "begin": "'",
+          "end": "(')|$",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.end.indonesia"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escape"
+            }
+          ],
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.indonesia"
+            }
+          }
+        }
+      ]
+    },
+    "escape": {
+      "name": "constant.character.escape.indonesia",
+      "match": "\\\\."
+    },
+    "sisipan": {
+      "name": "meta.interpolation.indonesia",
+      "begin": "\\{",
+      "end": "\\}|$",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.interpolation.begin.indonesia"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.interpolation.end.indonesia"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#isi"
+        }
+      ]
+    },
+    "angka": {
+      "name": "constant.numeric.indonesia",
+      "match": "\\b\\d+(?:\\.\\d+)?\\b"
+    },
+    "definisi": {
+      "patterns": [
+        {
+          "match": "\\b(fungsi)[ \\t]+([\\p{L}_][\\p{L}\\p{N}_]*)",
+          "captures": {
+            "1": {
+              "name": "storage.type.function.indonesia"
+            },
+            "2": {
+              "name": "entity.name.function.indonesia"
+            }
+          }
+        },
+        {
+          "match": "\\b(kelas)[ \\t]+([\\p{L}_][\\p{L}\\p{N}_]*)",
+          "captures": {
+            "1": {
+              "name": "storage.type.class.indonesia"
+            },
+            "2": {
+              "name": "entity.name.type.class.indonesia"
+            }
+          }
+        }
+      ]
+    },
+    "tanya": {
+      "match": "\\b(tanya)(?:[ \\t]+(angka))?(?=[ \\t]*[\\\"'])",
+      "captures": {
+        "1": {
+          "name": "keyword.control.indonesia"
+        },
+        "2": {
+          "name": "keyword.control.indonesia"
+        }
+      }
+    },
+    "frasa": {
+      "patterns": [
+        {
+          "name": "constant.language.indonesia",
+          "match": "\\b(?:tanggal[ \\t]+hari[ \\t]+ini|detik[ \\t]+sekarang|menit[ \\t]+sekarang|waktu[ \\t]+sekarang|jam[ \\t]+sekarang|angka[ \\t]+acak|bulan[ \\t]+ini|tahun[ \\t]+ini|hari[ \\t]+ini)\\b"
+        },
+        {
+          "name": "keyword.control.indonesia",
+          "match": "\\b(?:untuk[ \\t]+setiap|atau[ \\t]+kalau|atau[ \\t]+jika|di[ \\t]+dalam)\\b"
+        },
+        {
+          "name": "keyword.operator.word.indonesia",
+          "match": "\\b(?:lebih[ \\t]+besar[ \\t]+daripada[ \\t]+atau[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+kecil[ \\t]+daripada[ \\t]+atau[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+besar[ \\t]+dari[ \\t]+atau[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+kecil[ \\t]+dari[ \\t]+atau[ \\t]+sama[ \\t]+dengan|kurang[ \\t]+daripada[ \\t]+atau[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+daripada[ \\t]+atau[ \\t]+sama[ \\t]+dengan|kurang[ \\t]+dari[ \\t]+atau[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+besar[ \\t]+atau[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+kecil[ \\t]+atau[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+dari[ \\t]+atau[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+besar[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+kecil[ \\t]+sama[ \\t]+dengan|tidak[ \\t]+kurang[ \\t]+daripada|lebih[ \\t]+besar[ \\t]+daripada|lebih[ \\t]+kecil[ \\t]+daripada|tidak[ \\t]+lebih[ \\t]+daripada|tidak[ \\t]+habis[ \\t]+dibagi|tidak[ \\t]+kurang[ \\t]+dari|tidak[ \\t]+sama[ \\t]+dengan|lebih[ \\t]+besar[ \\t]+dari|lebih[ \\t]+kecil[ \\t]+dari|tidak[ \\t]+lebih[ \\t]+dari|kurang[ \\t]+daripada|lebih[ \\t]+daripada|paling[ \\t]+sedikit|paling[ \\t]+banyak|habis[ \\t]+dibagi|kurang[ \\t]+dari|sama[ \\t]+dengan|lebih[ \\t]+dari|tidak[ \\t]+sama|sisa[ \\t]+bagi|tidak[ \\t]+ada)\\b"
+        }
+      ]
+    },
+    "kata-kunci": {
+      "patterns": [
+        {
+          "name": "constant.language.indonesia",
+          "match": "\\b(?:kosong|benar|salah)\\b"
+        },
+        {
+          "name": "keyword.control.indonesia",
+          "match": "\\b(?:masukan_desimal|masukan_angka|kembalikan|selainnya|tampilkan|akhirnya|berhenti|lakukan|langkah|masukan|sebagai|tangkap|adalah|bawaan|ketika|lempar|lewati|sampai|selama|ulangi|cetak|dalam|impor|kalau|pilih|tulis|untuk|coba|dari|jika|maka)\\b"
+        },
+        {
+          "name": "keyword.operator.word.indonesia",
+          "match": "\\b(?:dipangkatkan|dikalikan|dikurangi|dikurang|ditambah|pangkat|dibagi|dikali|bukan|tidak|atau|ada|dan)\\b"
+        },
+        {
+          "name": "storage.type.indonesia",
+          "match": "\\b(?:mewarisi|pribadi|fungsi|statis|kelas|tetap|buat)\\b"
+        },
+        {
+          "name": "support.type.indonesia",
+          "match": "\\b(?:bilangan|desimal|logika|teks)\\b"
+        },
+        {
+          "name": "variable.language.indonesia",
+          "match": "\\b(?:super|diri)\\b"
+        }
+      ]
+    },
+    "fungsi-bawaan": {
+      "match": "\\b(masukan_desimal|masukan_angka|ubah_desimal|ubah_logika|ubah_angka|Kesalahan|diurutkan|tampilkan|ubah_teks|maksimum|dibalik|masukan|minimum|panjang|rentang|jumlah|mutlak|tunggu|Error|cetak|jenis|tanya|tulis)(?=[ \\t]*\\()",
+      "name": "support.function.builtin.indonesia"
+    }
+  }
+}

@@ -6,3 +6,5 @@ __pycache__/
 web/situs/
 web/.cache/
 web/node_modules/
+vscode/node_modules/
+*.vsix

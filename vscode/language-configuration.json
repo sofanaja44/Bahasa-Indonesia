@@ -1,0 +1,42 @@
+{
+  "comments": {
+    "lineComment": "#",
+    "blockComment": ["\"\"\"", "\"\"\""]
+  },
+  "brackets": [
+    ["(", ")"],
+    ["[", "]"],
+    ["{", "}"]
+  ],
+  "autoClosingPairs": [
+    { "open": "(", "close": ")" },
+    { "open": "[", "close": "]" },
+    { "open": "{", "close": "}" },
+    { "open": "\"", "close": "\"", "notIn": ["string", "comment"] },
+    { "open": "'", "close": "'", "notIn": ["string", "comment"] }
+  ],
+  "surroundingPairs": [
+    ["(", ")"],
+    ["[", "]"],
+    ["{", "}"],
+    ["\"", "\""],
+    ["'", "'"]
+  ],
+  "indentationRules": {
+    "increaseIndentPattern": "^.*(:|\\bmaka|\\blakukan)\\s*(#.*)?$",
+    "decreaseIndentPattern": "^\\s*(atau jika|atau kalau|selainnya|tangkap|akhirnya)\\b"
+  },
+  "onEnterRules": [
+    {
+      "beforeText": "^.*(:|\\bmaka|\\blakukan)\\s*(#.*)?$",
+      "action": { "indent": "indent" }
+    },
+    {
+      "beforeText": "^\\s*(kembalikan|berhenti|lewati|lempar)\\b.*$",
+      "action": { "indent": "outdent" }
+    }
+  ],
+  "folding": {
+    "offSide": true
+  }
+}
