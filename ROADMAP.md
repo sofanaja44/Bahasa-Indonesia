@@ -13,6 +13,7 @@ Yang sudah ada:
 - Pustaka standar (`matematika`, `acak`, `waktu`, `berkas`), metode teks, dan kosakata natural seperti `angka acak dari 1 sampai 6` dan `tanya "Siapa namamu?"`.
 - Pesan error berbahasa Indonesia yang menunjuk baris dan kolom, lengkap dengan saran perbaikan.
 - Tes otomatis (termasuk [tes kesesuaian](tes_kesesuaian/README.md)) yang berjalan di GitHub untuk Windows, macOS, dan Linux.
+- [Editor di browser](web/README.md) yang bisa dipakai dari HP, juga tanpa internet; aplikasi unduhan satu berkas untuk Windows, macOS, dan Linux; serta [ekstensi VS Code](vscode/README.md).
 
 Temuan pengujian yang menjadi dasar Tahap 1:
 
@@ -47,11 +48,21 @@ Selesai bila: semua butir di atas tercentang dan bahasa diberi versi **1.0** (ta
 
 ## Tahap 2 — Bisa dipakai tanpa memasang Python
 
-- [ ] **Aplikasi unduhan.** Interpreter dibungkus menjadi `indonesia.exe` (Windows) serta versi macOS dan Linux memakai PyInstaller, dibuat otomatis oleh GitHub Actions dan dipasang di halaman Releases. Pengguna cukup unduh dan jalankan.
-- [ ] **Editor di browser.** Menulis dan menjalankan program langsung dari HP atau komputer lab sekolah, tanpa memasang apa pun. Interpreter yang ada dijalankan di browser lewat Pyodide (Python dalam WebAssembly). Dilengkapi contoh program dan tombol berbagi.
-- [ ] **Ekstensi VS Code**: pewarnaan kode, potongan kode (snippet), dan tombol jalankan.
+- [x] **Editor di browser** ([web/](web/README.md)). Menulis dan menjalankan program langsung dari HP atau komputer lab sekolah, tanpa memasang apa pun. Interpreter yang sama dijalankan lewat Pyodide (Python dalam WebAssembly) di Web Worker.
+  - `tanya`, `tunggu`, dan tombol Hentikan lewat saluran service worker, jadi bisa diterbitkan di GitHub Pages.
+  - Contoh program, tombol berbagi (program di dalam tautan), draf tersimpan otomatis, dan penanda baris yang salah.
+  - Bisa dibuka tanpa internet dan dipasang di layar utama HP.
+  - Semua tes kesesuaian juga dijalankan di Pyodide, ditambah 19 uji editor di Chromium.
+- [x] **Aplikasi unduhan.** Interpreter dibungkus dengan PyInstaller menjadi satu berkas untuk Windows, macOS, dan Linux oleh GitHub Actions ([rilis.yml](.github/workflows/rilis.yml)). Setiap aplikasi diuji dengan semua tes kesesuaian sebelum terbit di halaman Releases.
+- [x] **Ekstensi VS Code** ([vscode/](vscode/README.md)): pewarnaan kode, potongan kode, jorokan otomatis, dan tombol Jalankan. Grammarnya dibuat dari kosakata bahasa (`src/kosakata.py`), sama seperti pewarnaan di editor web.
 
-Prioritas utama tahap ini adalah editor di browser, karena banyak anak Indonesia belajar lewat HP.
+Langkah yang perlu dilakukan pemilik repositori:
+
+1. Aktifkan GitHub Pages: *Settings → Pages → Build and deployment → Source: GitHub Actions*. Editor lalu terbit di https://sofanaja44.github.io/Bahasa-Indonesia/ setiap kali `main` berubah.
+2. Rilis pertama: samakan `VERSI` di `indonesia.py`, lalu dorong tag-nya (mis. `v0.4.0`).
+3. (Pilihan) Terbitkan ekstensi di VS Code Marketplace dan Open VSX; keduanya butuh akun penerbit `sofanaja44`.
+
+Yang bisa menyusul: ekstensi yang menjalankan program tanpa memasang aplikasi (memakai Pyodide yang sama), dan penandatanganan aplikasi agar Windows/macOS tidak menampilkan peringatan.
 
 ---
 

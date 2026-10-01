@@ -2,11 +2,13 @@
   <h1>🇮🇩 Bahasa Indonesia Programming Language</h1>
   <p><strong>Bahasa pemrograman berasaskan 100% Bahasa Indonesia</strong></p>
   
-  [![Status](https://img.shields.io/badge/Status-Aktif%20%28v0.1%20MVP%29-success?style=for-the-badge)]()
+  [![Status](https://img.shields.io/badge/Status-Aktif%20%28v0.3%29-success?style=for-the-badge)]()
   [![Lisensi](https://img.shields.io/badge/Lisensi-MIT-blue?style=for-the-badge)]()
   [![Python](https://img.shields.io/badge/Python-3.11%2B-yellow?style=for-the-badge&logo=python&logoColor=white)]()
   
   <p><em>"Buat kode seperti kamu bicara — sepenuhnya dalam Bahasa Indonesia."</em></p>
+
+  <p><strong>▶️ <a href="https://sofanaja44.github.io/Bahasa-Indonesia/">Coba langsung di browser</a></strong> — tanpa memasang apa pun, juga dari HP.</p>
 </div>
 
 ---
@@ -222,7 +224,33 @@ Nama yang juga kata kunci perlu nama lain saat diimpor langsung: `dari acak impo
 
 ## 🚀 Cara Menjalankan
 
-Interpretasi kode Bahasa Indonesia dieksekusi melalui mesin *backend* Python (versi 3.11 atau lebih baru).
+### 1. Langsung di browser, tanpa memasang apa pun 🌐
+
+Buka **[editor Bahasa Indonesia](https://sofanaja44.github.io/Bahasa-Indonesia/)** di HP atau komputer, tulis program, lalu tekan **▶ Jalankan**.
+
+- Contoh program tersedia di menu, termasuk permainan tebak angka dan jam digital.
+- Program bisa dibagikan lewat tautan, misalnya ke WhatsApp.
+- Setelah kunjungan pertama, editor tetap bisa dibuka tanpa internet, dan di HP bisa dipasang di layar utama.
+
+### 2. Aplikasi untuk komputer, tanpa Python 💻
+
+Unduh aplikasinya dari [halaman Releases](https://github.com/sofanaja44/Bahasa-Indonesia/releases):
+
+| Sistem | Berkas | Menjalankan program |
+|---|---|---|
+| Windows | `indonesia-windows.exe` | `indonesia-windows.exe program.id` |
+| macOS (Apple Silicon) | `indonesia-macos` | `chmod +x indonesia-macos`, lalu `./indonesia-macos program.id` |
+| Linux | `indonesia-linux` | `chmod +x indonesia-linux`, lalu `./indonesia-linux program.id` |
+
+- Tanpa nama berkas, aplikasinya membuka mode interaktif.
+- Agar bisa dipanggil dari folder mana saja (dan dipakai ekstensi VS Code), ganti namanya menjadi `indonesia` (`indonesia.exe` di Windows) dan letakkan di folder yang ada di PATH.
+- Aplikasinya belum ditandatangani, sehingga bisa muncul peringatan:
+  - Windows: klik *More info → Run anyway*.
+  - macOS: jalankan sekali `xattr -d com.apple.quarantine indonesia-macos`.
+
+**VS Code:** ekstensi `bahasa-indonesia.vsix` (juga di halaman Releases) menambahkan pewarnaan kode, potongan kode, dan tombol ▶ Jalankan. Pasang lewat *Extensions → ⋯ → Install from VSIX...*
+
+### 3. Dengan Python 3.11 atau lebih baru 🐍
 
 1. **Jalankan program dari file `.id`:**
 ```bash
@@ -252,6 +280,8 @@ Proyek ini tertata rapi agar sistem dapat dirombak dan dibaca oleh para kontribu
 ```
 indonesia-v1/
 ├── src/              # Kode sumber interpreter (Lexer, Parser, Ast, Evaluate, pustaka standar)
+├── web/              # Editor di browser (Pyodide), lihat web/README.md
+├── vscode/           # Ekstensi VS Code
 ├── tests/            # Unit test dengan `pytest`
 ├── tes_kesesuaian/   # Spesifikasi bahasa yang bisa dijalankan (program .id + keluaran yang diharapkan)
 ├── contoh/           # Himpunan program-program contoh (File berekstensi .id) 
@@ -279,6 +309,19 @@ python -m pytest tests/ -v
 ```
 
 Perilaku bahasa dijaga oleh [tes kesesuaian](tes_kesesuaian/README.md); fitur baru sebaiknya disertai tes di sana. Rencana pengembangan ada di [ROADMAP.md](ROADMAP.md).
+
+```bash
+# Editor web: bangun, lalu buka http://localhost:8000
+python web/bangun.py --sajikan
+
+# Tes editor web dan ekstensi VS Code (butuh Node.js)
+cd web && npm ci && node tes/tes_pyodide.mjs && node --test tes/tes_editor.mjs
+cd vscode && npm ci && node --test tes/tes_grammar.mjs
+```
+
+- **Setelah mengubah kata kunci** di `src/token_types.py`, jalankan `python vscode/bangun.py` agar pewarnaan di VS Code ikut berubah. Tesnya akan mengingatkan bila lupa. Editor web mengikutinya otomatis.
+- **Rilis baru:** samakan `VERSI` di `indonesia.py`, lalu dorong tag-nya, misalnya `git tag v0.4.0 && git push origin v0.4.0`. GitHub Actions membuat aplikasi untuk Windows, macOS, dan Linux beserta ekstensi VS Code, mengujinya, lalu menerbitkannya di halaman Releases.
+- **Editor web** diterbitkan otomatis ke GitHub Pages setiap kali `main` berubah. Sekali saja sebelumnya: *Settings → Pages → Source: GitHub Actions*.
 
 ---
 

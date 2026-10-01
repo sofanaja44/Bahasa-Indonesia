@@ -30,6 +30,15 @@ Aturan:
 python -m pytest tests/test_kesesuaian.py -v
 ```
 
+Mesin lain diuji sebagai program terpisah lewat `MESIN_INDONESIA`. Perintahnya dijalankan dengan nama berkas program sebagai argumen terakhir, `.masukan` dialirkan ke stdin, dan kesalahan dibaca dari stderr (`❌ NamaKesalahan ...`, kode keluar bukan 0):
+
+```bash
+MESIN_INDONESIA="dist/indonesia" python -m pytest tests/test_kesesuaian.py     # aplikasi PyInstaller
+MESIN_INDONESIA="python indonesia.py" python -m pytest tests/test_kesesuaian.py
+```
+
+Editor web menjalankan tes yang sama di Pyodide: `node web/tes/tes_pyodide.mjs`.
+
 ## Menambah tes
 
 1. Tulis program di subfolder yang sesuai, mis. `perulangan/ulangi_kali.id`.
