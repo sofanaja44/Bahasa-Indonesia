@@ -11,6 +11,7 @@ vscode/node_modules/
 
 # Mesin Go
 *.test
-mesin/indonesia
+mesin/bin/
 mesin/*.prof
 mesin/*.out
+dist/

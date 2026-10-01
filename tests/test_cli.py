@@ -3,16 +3,25 @@ test_cli.py — Test perintah baris (CLI) indonesia.py.
 """
 
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
 
 AKAR = Path(__file__).resolve().parent.parent
+# Mesin lain (mis. mesin Go) bisa diuji dengan tes yang sama: MESIN_INDONESIA="mesin/indonesia"
+MESIN = os.environ.get("MESIN_INDONESIA")
 
 
 def jalankan_cli(*args, masukan=""):
+    if MESIN:
+        perintah = shlex.split(MESIN, posix=os.name != "nt")
+        if Path(perintah[0]).is_file():
+            perintah[0] = str(Path(perintah[0]).resolve())
+    else:
+        perintah = [sys.executable, str(AKAR / "indonesia.py")]
     return subprocess.run(
-        [sys.executable, str(AKAR / "indonesia.py"), *args],
+        [*perintah, *args],
         input=masukan, capture_output=True, text=True, encoding="utf-8", timeout=30,
         env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )

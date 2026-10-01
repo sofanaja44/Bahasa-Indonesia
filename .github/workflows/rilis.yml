@@ -1,10 +1,10 @@
 name: Rilis
 
-# Membungkus interpreter menjadi aplikasi satu berkas untuk Windows, macOS, dan Linux
-# (PyInstaller), lalu mengujinya dengan semua tes kesesuaian. Ekstensi VS Code (.vsix)
-# ikut dikemas.
+# Membangun perintah 'indonesia' (mesin Go, satu berkas tanpa perlu memasang apa pun) untuk
+# Windows, macOS, dan Linux, lalu mengujinya dengan semua tes kesesuaian dan tes CLI.
+# Ekstensi VS Code (.vsix) ikut dikemas.
 #
-# Untuk rilis baru: samakan VERSI di indonesia.py, lalu dorong tag-nya, mis.
+# Untuk rilis baru: samakan Versi di mesin/api.go, lalu dorong tag-nya, mis.
 #     git tag v0.4.0 && git push origin v0.4.0
 # Aplikasinya lalu terbit di halaman Releases. Pada pull request (atau "Run workflow"),
 # aplikasinya hanya dibuat dan diuji, dan bisa diunduh dari halaman run di tab Actions.
@@ -14,11 +14,10 @@ on:
     tags: ["v*"]
   pull_request:
     paths:
-      - "indonesia.py"
-      - "src/**"
+      - "mesin/**"
       - "tes_kesesuaian/**"
       - "tests/test_kesesuaian.py"
-      - "requirements.txt"
+      - "tests/test_cli.py"
       - "vscode/**"
       - ".github/workflows/rilis.yml"
   workflow_dispatch:
@@ -34,34 +33,50 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-latest, nama: Windows, berkas: indonesia-windows.exe }
-          - { os: macos-latest, nama: macOS, berkas: indonesia-macos }
-          # Ubuntu 22.04 (glibc 2.35), agar aplikasinya juga jalan di distro Linux yang lebih lama
-          - { os: ubuntu-22.04, nama: Linux, berkas: indonesia-linux }
+          # uji: aplikasinya dijalankan dengan semua tes di sistem itu sendiri
+          - { os: windows-latest, nama: Windows (x64), goos: windows, goarch: amd64, berkas: indonesia-windows-x64.exe, uji: true }
+          - { os: macos-latest, nama: macOS (Apple Silicon), goos: darwin, goarch: arm64, berkas: indonesia-macos-arm64, uji: true }
+          - { os: ubuntu-latest, nama: Linux (x64), goos: linux, goarch: amd64, berkas: indonesia-linux-x64, uji: true }
+          # Dibangun silang (Go tidak butuh sistem tujuannya), tanpa dijalankan
+          - { os: ubuntu-latest, nama: Windows (ARM), goos: windows, goarch: arm64, berkas: indonesia-windows-arm64.exe, uji: false }
+          - { os: ubuntu-latest, nama: macOS (Intel), goos: darwin, goarch: amd64, berkas: indonesia-macos-x64, uji: false }
+          - { os: ubuntu-latest, nama: Linux (ARM), goos: linux, goarch: arm64, berkas: indonesia-linux-arm64, uji: false }
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-go@v5
         with:
-          python-version: "3.13"
+          go-version: stable
+          cache: false
       - name: Periksa nomor versi
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
-          versi=$(python -c "import re; print(re.search(r'^VERSI = \"(.+)\"', open('indonesia.py', encoding='utf-8').read(), re.M).group(1))")
+          versi=$(sed -n 's/^const Versi = "\(.*\)"/\1/p' mesin/api.go)
           if [ "v$versi" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME tidak sama dengan VERSI = \"$versi\" di indonesia.py"
+            echo "::error::Tag $GITHUB_REF_NAME tidak sama dengan Versi = \"$versi\" di mesin/api.go"
             exit 1
           fi
-      - name: Pasang PyInstaller
-        run: python -m pip install -r requirements.txt pyinstaller==6.22.3 pillow
-      - name: Bungkus interpreter menjadi satu berkas
-        run: pyinstaller --onefile --name indonesia --icon web/ikon-512.png --clean --noconfirm indonesia.py
-      - name: Uji aplikasinya dengan tes kesesuaian
+      - name: Bangun aplikasi
+        working-directory: mesin
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: go build -trimpath -ldflags="-s -w" -o "../dist/${{ matrix.berkas }}" ./cmd/indonesia
+      - uses: actions/setup-python@v5
+        if: matrix.uji
+        with:
+          python-version: "3.13"
+      - name: Uji aplikasinya dengan tes kesesuaian dan tes CLI
+        if: matrix.uji
         shell: bash
         run: |
-          mv dist/indonesia* "dist/${{ matrix.berkas }}"
+          python -m pip install -r requirements.txt
           "dist/${{ matrix.berkas }}" versi
-          MESIN_INDONESIA="dist/${{ matrix.berkas }}" python -m pytest tests/test_kesesuaian.py -q
+          MESIN_INDONESIA="dist/${{ matrix.berkas }}" python -m pytest tests/test_kesesuaian.py tests/test_cli.py -q
+        env:
+          PYTHONIOENCODING: utf-8
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.berkas }}

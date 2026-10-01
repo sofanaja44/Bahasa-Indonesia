@@ -9,7 +9,8 @@ Dokumen ini melengkapi [PRD.md](PRD.md) (spesifikasi awal) dan [TASKS.md](TASKS.
 ## Kondisi saat ini (Oktober 2026)
 
 Yang sudah ada:
-- Interpreter di Python 3.11+ (lexer → parser → interpreter) dengan gaya penulisan **natural** (`buat umur adalah 17`, `jika tidak, ...`, `tambahkan 1 ke skor`) dan **simbolik** (`buat umur = 17`).
+- Bahasa dengan gaya penulisan **natural** (`buat umur adalah 17`, `jika tidak, ...`, `tambahkan 1 ke skor`) dan **simbolik** (`buat umur = 17`).
+- [Mesin utama dalam Go](mesin/README.md): *bytecode virtual machine* yang menjadi aplikasi satu berkas (±3 MB) dan WebAssembly untuk editor web, 8–65× lebih cepat dari interpreter Python. Interpreter Python (`src/`) tetap ada sebagai acuan perilaku.
 - Pustaka standar (`matematika`, `acak`, `waktu`, `berkas`), metode teks, dan kosakata natural seperti `angka acak dari 1 sampai 6` dan `tanya "Siapa namamu?"`.
 - Pesan error berbahasa Indonesia yang menunjuk baris dan kolom, lengkap dengan saran perbaikan.
 - Tes otomatis (termasuk [tes kesesuaian](tes_kesesuaian/README.md)) yang berjalan di GitHub untuk Windows, macOS, dan Linux.
@@ -23,7 +24,7 @@ Temuan pengujian yang menjadi dasar Tahap 1:
 | Teks belum punya metode (`huruf_besar`, `belah`, ...) | Pengolahan teks harus ditulis manual | ✅ Selesai |
 | Rekursi hanya kuat ±197 tingkat; `faktorial(200)` berhenti dengan error Python berbahasa Inggris | Soal sekolah yang umum gagal dijalankan | ✅ Selesai (3.000 tingkat) |
 | Salah ketik tidak diberi saran; `Jika` berhuruf besar menghasilkan pesan yang membingungkan | Pemula sulit memperbaiki kesalahannya sendiri | ✅ Selesai |
-| Perulangan 1 juta kali butuh ±2,8 detik (±38× lebih lambat dari Python); pemanggilan fungsi ±215× lebih lambat | Berat untuk permainan dan animasi | ⏳ Tahap 3 |
+| Perulangan 1 juta kali butuh ±2,8 detik (±38× lebih lambat dari Python); pemanggilan fungsi ±215× lebih lambat | Berat untuk permainan dan animasi | ✅ Tahap 3 (mesin Go: 0,1 detik) |
 | README menyebut lisensi MIT tetapi file `LICENSE` belum ada; belum ada tes otomatis di GitHub | Menghambat adopsi oleh sekolah dan kontributor | ✅ Selesai |
 
 ---
@@ -48,34 +49,40 @@ Selesai bila: semua butir di atas tercentang dan bahasa diberi versi **1.0** (ta
 
 ## Tahap 2 — Bisa dipakai tanpa memasang Python
 
-- [x] **Editor di browser** ([web/](web/README.md)). Menulis dan menjalankan program langsung dari HP atau komputer lab sekolah, tanpa memasang apa pun. Interpreter yang sama dijalankan lewat Pyodide (Python dalam WebAssembly) di Web Worker.
+- [x] **Editor di browser** ([web/](web/README.md)). Menulis dan menjalankan program langsung dari HP atau komputer lab sekolah, tanpa memasang apa pun. Mula-mula interpreter Python dijalankan lewat Pyodide; sejak Tahap 3 memakai mesin Go dalam WebAssembly, di dalam Web Worker.
   - `tanya`, `tunggu`, dan tombol Hentikan lewat saluran service worker, jadi bisa diterbitkan di GitHub Pages.
   - Contoh program, tombol berbagi (program di dalam tautan), draf tersimpan otomatis, dan penanda baris yang salah.
   - Bisa dibuka tanpa internet dan dipasang di layar utama HP.
-  - Semua tes kesesuaian juga dijalankan di Pyodide, ditambah 19 uji editor di Chromium.
-- [x] **Aplikasi unduhan.** Interpreter dibungkus dengan PyInstaller menjadi satu berkas untuk Windows, macOS, dan Linux oleh GitHub Actions ([rilis.yml](.github/workflows/rilis.yml)). Setiap aplikasi diuji dengan semua tes kesesuaian sebelum terbit di halaman Releases.
+  - Semua tes kesesuaian dan korpus pembanding juga dijalankan di mesin WebAssembly, ditambah 20 uji editor di Chromium.
+- [x] **Aplikasi unduhan.** Satu berkas untuk Windows, macOS, dan Linux, dibuat oleh GitHub Actions ([rilis.yml](.github/workflows/rilis.yml)): mula-mula interpreter Python yang dibungkus PyInstaller, sejak Tahap 3 perintah `indonesia` dari mesin Go. Setiap aplikasi diuji dengan semua tes kesesuaian dan tes CLI sebelum terbit di halaman Releases.
 - [x] **Ekstensi VS Code** ([vscode/](vscode/README.md)): pewarnaan kode, potongan kode, jorokan otomatis, dan tombol Jalankan. Grammarnya dibuat dari kosakata bahasa (`src/kosakata.py`), sama seperti pewarnaan di editor web.
 
 Langkah yang perlu dilakukan pemilik repositori:
 
 1. Aktifkan GitHub Pages: *Settings → Pages → Build and deployment → Source: GitHub Actions*. Editor lalu terbit di https://sofanaja44.github.io/Bahasa-Indonesia/ setiap kali `main` berubah.
-2. Rilis pertama: samakan `VERSI` di `indonesia.py`, lalu dorong tag-nya (mis. `v0.4.0`).
+2. Rilis pertama: samakan `Versi` di `mesin/api.go` (dan `VERSI` di `indonesia.py`), lalu dorong tag-nya (mis. `v0.4.0`).
 3. (Pilihan) Terbitkan ekstensi di VS Code Marketplace dan Open VSX; keduanya butuh akun penerbit `sofanaja44`.
 
-Yang bisa menyusul: ekstensi yang menjalankan program tanpa memasang aplikasi (memakai Pyodide yang sama), dan penandatanganan aplikasi agar Windows/macOS tidak menampilkan peringatan.
+Yang bisa menyusul: ekstensi yang menjalankan program tanpa memasang aplikasi (memakai `mesin.wasm` yang sama dengan editor web), dan penandatanganan aplikasi agar Windows/macOS tidak menampilkan peringatan.
 
 ---
 
 ## Tahap 3 — Mesin mandiri, lepas dari Python
 
-Mesin ditulis ulang dalam **Go** sebagai *bytecode virtual machine*:
+Mesin ditulis ulang dalam **Go** sebagai *bytecode virtual machine* ([mesin/](mesin/README.md)). Go dipilih karena lebih mudah dipelajari daripada Rust dan banyak dipakai di industri teknologi Indonesia, sehingga kontributor lebih mudah dicari.
 
-- Satu file program kecil untuk Windows, macOS, dan Linux.
-- Mesin yang sama dikompilasi ke WebAssembly untuk editor di browser, sehingga desktop dan browser memakai satu mesin.
-- Jauh lebih cepat dari interpreter Python saat ini, dan tanpa batas rekursi bawaan Python.
-- Go lebih mudah dipelajari daripada Rust dan banyak dipakai di industri teknologi Indonesia, sehingga kontributor lebih mudah dicari.
+- [x] **Mesin Go**: lexer, parser, kompiler *bytecode*, dan VM berbasis tumpukan. Pesan kesalahan, saran "Maksud Anda ...?", aturan angka (bilangan bulat tanpa batas, tampilan desimal), pustaka standar, sampai deret angka `acak.atur_benih` dibuat sama persis dengan interpreter Python.
+- [x] **Satu file program kecil** (±3 MB) untuk Windows, macOS, dan Linux (x64 dan ARM), tanpa perlu memasang Python. Perintahnya sama: berkas, `-e`, REPL multi-baris, Ctrl+C.
+- [x] **Mesin yang sama di browser**: dikompilasi ke WebAssembly untuk editor web, menggantikan Pyodide. Ukurannya jauh lebih kecil, dimuat lebih cepat, dan tombol Hentikan kini juga bekerja untuk perulangan yang tidak menampilkan apa pun.
+- [x] **Jauh lebih cepat**: pemanggilan fungsi ±65×, perulangan ±26× lebih cepat dari interpreter Python ([tabel lengkap](mesin/README.md#kecepatan)). Rekursi tetap dibatasi 3.000 tingkat seperti sebelumnya, tetapi tidak lagi bergantung pada tumpukan Python.
+- [x] **Terbukti sama dengan acuannya**:
+  - lulus semua tes kesesuaian dan tes CLI, sebagai aplikasi maupun WebAssembly;
+  - korpus pembanding 904 program (semua potongan kode dari tes Python, contoh, dan kasus tepi) yang hasilnya harus sama persis;
+  - ±25.000 program acak (ekspresi dan alur kontrol) yang dibandingkan dengan interpreter Python.
 
-Syarat memulai: bahasa sudah versi 1.0 dan tes kesesuaian dari Tahap 1 sudah lengkap. Mesin Go dianggap benar bila lulus semua tes kesesuaian yang sama. Jika ditulis ulang sebelum tata bahasa stabil, setiap fitur baru harus dikerjakan dua kali.
+Bahasa ini belum dibekukan di versi 1.0, jadi interpreter Python tetap disimpan sebagai **acuan**: perubahan perilaku dikerjakan di keduanya, dan CI gagal bila korpus pembanding tidak lagi sesuai. Beberapa perbedaan disengaja, misalnya pangkat yang selalu dibulatkan tepat dan pesan berbahasa Indonesia di tempat interpreter Python membocorkan exception mentah; daftarnya ada di [mesin/README.md](mesin/README.md#perbedaan-yang-disengaja-dengan-interpreter-python).
+
+Yang bisa menyusul: setelah versi 1.0, interpreter Python bisa dipensiunkan dan mesin Go menjadi satu-satunya acuan.
 
 ---
 

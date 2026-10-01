@@ -22,7 +22,7 @@ ulangi 3 kali:
 
 Tombol ▶ menjalankan perintah `indonesia namaberkas.id` di terminal. Pasang dulu salah satu:
 
-- **Aplikasi `indonesia`** dari [halaman Releases](https://github.com/sofanaja44/Bahasa-Indonesia/releases), lalu letakkan di folder yang ada di PATH; atau
+- **Aplikasi `indonesia`** dari [halaman Releases](https://github.com/sofanaja44/Bahasa-Indonesia/releases) (mis. `indonesia-windows-x64.exe`), ganti namanya menjadi `indonesia` (`indonesia.exe` di Windows), lalu letakkan di folder yang ada di PATH; atau
 - **Kode sumbernya** (butuh Python 3.11+), lalu atur **Bahasa Indonesia: Perintah** di Settings menjadi misalnya `python C:/Bahasa-Indonesia/indonesia.py`.
 
 Tanpa memasang apa pun, program juga bisa dicoba di [editor web](https://sofanaja44.github.io/Bahasa-Indonesia/).

@@ -34,7 +34,7 @@ from src.ast_nodes import (
 )
 
 
-VERSI = "0.3.0"
+VERSI = "0.4.0"
 
 BANNER = f"""
 ╔════════════════════════════════════════════╗

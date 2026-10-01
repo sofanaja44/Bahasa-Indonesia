@@ -234,23 +234,31 @@ Buka **[editor Bahasa Indonesia](https://sofanaja44.github.io/Bahasa-Indonesia/)
 
 ### 2. Aplikasi untuk komputer, tanpa Python 💻
 
-Unduh aplikasinya dari [halaman Releases](https://github.com/sofanaja44/Bahasa-Indonesia/releases):
+Unduh aplikasinya dari [halaman Releases](https://github.com/sofanaja44/Bahasa-Indonesia/releases). Satu berkas kecil (±3 MB), tidak perlu memasang apa pun, dan puluhan kali lebih cepat dari versi Python ([mesin Go](mesin/README.md)):
 
 | Sistem | Berkas | Menjalankan program |
 |---|---|---|
-| Windows | `indonesia-windows.exe` | `indonesia-windows.exe program.id` |
-| macOS (Apple Silicon) | `indonesia-macos` | `chmod +x indonesia-macos`, lalu `./indonesia-macos program.id` |
-| Linux | `indonesia-linux` | `chmod +x indonesia-linux`, lalu `./indonesia-linux program.id` |
+| Windows | `indonesia-windows-x64.exe` (`-arm64.exe` untuk laptop ARM) | `indonesia-windows-x64.exe program.id` |
+| macOS (Apple Silicon) | `indonesia-macos-arm64` (`-x64` untuk Mac Intel) | `chmod +x indonesia-macos-arm64`, lalu `./indonesia-macos-arm64 program.id` |
+| Linux | `indonesia-linux-x64` (`-arm64` untuk Raspberry Pi 64-bit) | `chmod +x indonesia-linux-x64`, lalu `./indonesia-linux-x64 program.id` |
 
 - Tanpa nama berkas, aplikasinya membuka mode interaktif.
 - Agar bisa dipanggil dari folder mana saja (dan dipakai ekstensi VS Code), ganti namanya menjadi `indonesia` (`indonesia.exe` di Windows) dan letakkan di folder yang ada di PATH.
 - Aplikasinya belum ditandatangani, sehingga bisa muncul peringatan:
   - Windows: klik *More info → Run anyway*.
-  - macOS: jalankan sekali `xattr -d com.apple.quarantine indonesia-macos`.
+  - macOS: jalankan sekali `xattr -d com.apple.quarantine indonesia-macos-arm64`.
 
 **VS Code:** ekstensi `bahasa-indonesia.vsix` (juga di halaman Releases) menambahkan pewarnaan kode, potongan kode, dan tombol ▶ Jalankan. Pasang lewat *Extensions → ⋯ → Install from VSIX...*
 
-### 3. Dengan Python 3.11 atau lebih baru 🐍
+### 3. Dari kode sumber
+
+**Dengan Go 1.22+** (mesin utama):
+```bash
+cd mesin && go build -o bin/ ./cmd/indonesia
+bin/indonesia ../contoh/tebak_angka.id
+```
+
+**Dengan Python 3.11+** (interpreter acuan, perilakunya sama):
 
 1. **Jalankan program dari file `.id`:**
 ```bash
@@ -279,8 +287,9 @@ Proyek ini tertata rapi agar sistem dapat dirombak dan dibaca oleh para kontribu
 
 ```
 indonesia-v1/
-├── src/              # Kode sumber interpreter (Lexer, Parser, Ast, Evaluate, pustaka standar)
-├── web/              # Editor di browser (Pyodide), lihat web/README.md
+├── mesin/            # Mesin utama dalam Go: VM bytecode, perintah indonesia, WebAssembly (mesin/README.md)
+├── src/              # Interpreter acuan dalam Python (Lexer, Parser, Ast, Evaluate, pustaka standar)
+├── web/              # Editor di browser (mesin Go dalam WebAssembly), lihat web/README.md
 ├── vscode/           # Ekstensi VS Code
 ├── tests/            # Unit test dengan `pytest`
 ├── tes_kesesuaian/   # Spesifikasi bahasa yang bisa dijalankan (program .id + keluaran yang diharapkan)
@@ -311,16 +320,22 @@ python -m pytest tests/ -v
 Perilaku bahasa dijaga oleh [tes kesesuaian](tes_kesesuaian/README.md); fitur baru sebaiknya disertai tes di sana. Rencana pengembangan ada di [ROADMAP.md](ROADMAP.md).
 
 ```bash
-# Editor web: bangun, lalu buka http://localhost:8000
+# Mesin Go (butuh Go 1.22+): tes unit dan korpus pembanding dengan interpreter Python
+cd mesin && go test ./...
+go build -o bin/ ./cmd/indonesia && cd ..
+MESIN_INDONESIA=mesin/bin/indonesia python -m pytest tests/test_kesesuaian.py tests/test_cli.py
+
+# Editor web (butuh Go): bangun, lalu buka http://localhost:8000
 python web/bangun.py --sajikan
 
 # Tes editor web dan ekstensi VS Code (butuh Node.js)
-cd web && npm ci && node tes/tes_pyodide.mjs && node --test tes/tes_editor.mjs
+cd web && npm ci && node tes/tes_mesin.mjs && node --test tes/tes_editor.mjs
 cd vscode && npm ci && node --test tes/tes_grammar.mjs
 ```
 
+- **Mengubah perilaku bahasa:** ubah interpreter acuan (`src/`) dan mesin Go (`mesin/`) bersama-sama, lalu jalankan `python mesin/testdata/buat_korpus.py` untuk memperbarui korpus pembanding. Tes Go gagal bila keduanya berbeda. Penjelasannya ada di [mesin/README.md](mesin/README.md).
 - **Setelah mengubah kata kunci** di `src/token_types.py`, jalankan `python vscode/bangun.py` agar pewarnaan di VS Code ikut berubah. Tesnya akan mengingatkan bila lupa. Editor web mengikutinya otomatis.
-- **Rilis baru:** samakan `VERSI` di `indonesia.py`, lalu dorong tag-nya, misalnya `git tag v0.4.0 && git push origin v0.4.0`. GitHub Actions membuat aplikasi untuk Windows, macOS, dan Linux beserta ekstensi VS Code, mengujinya, lalu menerbitkannya di halaman Releases.
+- **Rilis baru:** samakan `Versi` di `mesin/api.go` (dan `VERSI` di `indonesia.py`), lalu dorong tag-nya, misalnya `git tag v0.4.0 && git push origin v0.4.0`. GitHub Actions membuat aplikasi untuk Windows, macOS, dan Linux beserta ekstensi VS Code, mengujinya, lalu menerbitkannya di halaman Releases.
 - **Editor web** diterbitkan otomatis ke GitHub Pages setiap kali `main` berubah. Sekali saja sebelumnya: *Settings → Pages → Source: GitHub Actions*.
 
 ---

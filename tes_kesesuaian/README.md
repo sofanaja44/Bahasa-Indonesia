@@ -1,6 +1,6 @@
 # Tes Kesesuaian
 
-Folder ini adalah **spesifikasi yang bisa dijalankan** untuk bahasa pemrograman Indonesia. Setiap mesin (interpreter Python saat ini, atau mesin Go di Tahap 3 [ROADMAP](../ROADMAP.md)) dianggap benar bila lulus semua tes di sini.
+Folder ini adalah **spesifikasi yang bisa dijalankan** untuk bahasa pemrograman Indonesia. Setiap mesin (interpreter acuan dalam Python dan [mesin Go](../mesin/README.md), baik sebagai aplikasi maupun WebAssembly di editor web) dianggap benar bila lulus semua tes di sini.
 
 Tes ini sengaja tidak bergantung pada detail interpreter Python: yang diperiksa hanya apa yang tampil di layar dan jenis kesalahannya.
 
@@ -33,11 +33,13 @@ python -m pytest tests/test_kesesuaian.py -v
 Mesin lain diuji sebagai program terpisah lewat `MESIN_INDONESIA`. Perintahnya dijalankan dengan nama berkas program sebagai argumen terakhir, `.masukan` dialirkan ke stdin, dan kesalahan dibaca dari stderr (`❌ NamaKesalahan ...`, kode keluar bukan 0):
 
 ```bash
-MESIN_INDONESIA="dist/indonesia" python -m pytest tests/test_kesesuaian.py     # aplikasi PyInstaller
+MESIN_INDONESIA="mesin/bin/indonesia" python -m pytest tests/test_kesesuaian.py   # mesin Go
 MESIN_INDONESIA="python indonesia.py" python -m pytest tests/test_kesesuaian.py
 ```
 
-Editor web menjalankan tes yang sama di Pyodide: `node web/tes/tes_pyodide.mjs`.
+Editor web menjalankan tes yang sama di mesin WebAssembly: `node web/tes/tes_mesin.mjs`.
+
+Selain tes ini, mesin Go juga dibandingkan langsung dengan interpreter acuan lewat [korpus pembanding](../mesin/README.md#tes) yang jauh lebih besar.
 
 ## Menambah tes
 
