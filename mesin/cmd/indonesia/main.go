@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -319,6 +320,7 @@ func (c *cli) modeInteraktif() {
 }
 
 func main() {
+	runtime.KeepAlive(penyeimbang) // tetap dialokasikan selama program berjalan
 	c := &cli{keluar: keluaranBaru(), masuk: &masukan{}, henti: &henti{ch: make(chan struct{})}}
 
 	sinyal := make(chan os.Signal, 1)

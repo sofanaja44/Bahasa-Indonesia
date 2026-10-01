@@ -74,8 +74,6 @@ func bulatKeInt(v any) (int, bool) {
 	return 0, false
 }
 
-var errTerlaluBesar = kesalahanTanpaLokasi(KNilai, "Hasil perhitungan terlalu besar")
-
 // keFloat mengubah angka menjadi float64 seperti float() Python (OverflowError bila terlalu besar).
 func keFloat(v any) (float64, bool) {
 	switch x := v.(type) {
