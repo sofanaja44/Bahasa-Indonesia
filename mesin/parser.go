@@ -13,7 +13,23 @@ type parser struct {
 	daftarBaris     []string
 	dalamPerulangan int // berhenti/lewati hanya boleh di dalam perulangan
 	dalamFungsi     int // kembalikan hanya boleh di dalam fungsi
+	kedalaman       int // sarang ekspresi & blok yang sedang dibaca
 }
+
+// batasSarang: batas aturan tata bahasa yang sedang bersarang (satu tingkat kurung memakai
+// beberapa aturan, jadi ±1.000 tingkat kurung). Interpreter Python sudah gagal di sekitar 80
+// tingkat kurung; batas ini menjaga tumpukan Go (juga di WebAssembly) agar tidak habis.
+const batasSarang = 4000
+
+func (p *parser) masuk() {
+	p.kedalaman++
+	if p.kedalaman > batasSarang {
+		panic(kesalahanTanpaLokasi(KTumpukan,
+			"Program bertumpuk terlalu dalam (mis. ekspresi atau rekursi yang sangat bersarang)"))
+	}
+}
+
+func (p *parser) keluar() { p.kedalaman-- }
 
 // Parse mengubah token menjadi AST. Kesalahan sintaks dikembalikan sebagai *Kesalahan.
 func Parse(tokens []Token, kode string) (program *NodeProgram, err *Kesalahan) {
@@ -232,6 +248,8 @@ func (p *parser) parse() *NodeProgram {
 }
 
 func (p *parser) parseBlok() []Node {
+	p.masuk()
+	defer p.keluar()
 	adaKoma := p.cocok(KOMA)
 	adaKata := p.cocok(MAKA, LAKUKAN)
 	adaTitikDua := p.cocok(TITIK_DUA)
@@ -837,7 +855,11 @@ func pesanJenisKesalahanAsing(nama string) string {
 
 // ---- Ekspresi ----
 
-func (p *parser) parseEkspresi() Node { return p.parseAtau() }
+func (p *parser) parseEkspresi() Node {
+	p.masuk()
+	defer p.keluar()
+	return p.parseAtau()
+}
 
 func (p *parser) parseAtau() Node {
 	kiri := p.parseDan()
@@ -858,6 +880,8 @@ func (p *parser) parseDan() Node {
 }
 
 func (p *parser) parseBukan() Node {
+	p.masuk()
+	defer p.keluar()
 	if p.periksa(BUKAN) {
 		t := p.majuToken()
 		return &NodeOperasiUnari{pos{t.Baris, t.Kolom}, "bukan", p.parseBukan()}
@@ -945,6 +969,8 @@ func (p *parser) parsePerkalian() Node {
 }
 
 func (p *parser) parsePangkat() Node {
+	p.masuk()
+	defer p.keluar()
 	basis := p.parseUnari()
 	if p.periksa(PANGKAT, PANGKAT_KK) {
 		t := p.majuToken()
@@ -954,6 +980,8 @@ func (p *parser) parsePangkat() Node {
 }
 
 func (p *parser) parseUnari() Node {
+	p.masuk()
+	defer p.keluar()
 	if p.periksa(KURANG) {
 		t := p.majuToken()
 		return &NodeOperasiUnari{pos{t.Baris, t.Kolom}, "-", p.parseUnari()}

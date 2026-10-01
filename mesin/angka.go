@@ -499,7 +499,12 @@ func pangkatFloat(x, y float64) float64 {
 		return 0
 	}
 	if x < 0 && y != math.Floor(y) {
-		panic(galatPython{"complex"}) // hasilnya bilangan kompleks
+		// Hasilnya bilangan kompleks. Python menghitungnya dulu: bila besarnya |x|^y meluap,
+		// yang muncul OverflowError ("complex exponentiation"), bukan hasil kompleks.
+		if math.IsInf(powTepat(-x, y), 0) {
+			panic(galatPython{"OverflowError"})
+		}
+		panic(galatPython{"complex"})
 	}
 	// Seperti float_pow CPython: hitung |x|^y lalu beri tanda minus bila y bilangan ganjil.
 	negatif := x < 0 && math.Mod(math.Abs(y), 2) == 1

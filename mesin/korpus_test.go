@@ -80,7 +80,11 @@ func teksAtauKosong(s *string) string {
 }
 
 func TestKorpusPembanding(t *testing.T) {
-	data, err := os.ReadFile("testdata/korpus.json")
+	berkas := "testdata/korpus.json"
+	if lain := os.Getenv("KORPUS"); lain != "" {
+		berkas = lain // mis. korpus program acak dari testdata/program_acak.py
+	}
+	data, err := os.ReadFile(berkas)
 	if err != nil {
 		t.Fatal(err)
 	}

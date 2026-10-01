@@ -174,10 +174,43 @@ func (k *kompiler) akhiriPerulangan(info *infoPerulangan, alamatLanjut int) {
 	}
 }
 
-// isiPerulangan: isi satu putaran di lingkup baru (seperti env.anak di Python).
-func (k *kompiler) isiPerulangan(stmts []Node, variabel string) {
-	perlu := variabel != "" || butuhLingkup(stmts)
-	if perlu {
+// Lingkup perulangan. Seperti env.anak di Python, setiap putaran punya lingkup baru. Bila isi
+// perulangan tidak membuat fungsi atau kelas, tidak ada closure yang bisa menangkap lingkup itu,
+// jadi satu lingkup dipakai ulang dan cukup dikosongkan di awal setiap putaran (lebih cepat).
+type lingkupPutaran struct {
+	perlu, pakaiUlang bool
+}
+
+// kondisi: ekspresi yang dihitung di dalam lingkup perulangan (kondisi selama/sampai).
+func (k *kompiler) mulaiLingkupPutaran(stmts []Node, variabel string, kondisi ...Node) lingkupPutaran {
+	lp := lingkupPutaran{perlu: variabel != "" || butuhLingkup(stmts)}
+	lp.pakaiUlang = lp.perlu && !bisaMenangkapLingkup(stmts) && !bisaMenangkapLingkup(kondisi)
+	if lp.pakaiUlang {
+		k.emit(opLingkupMasuk, 0, 0, nil)
+		k.lepas = append(k.lepas, entriLepas{jenis: ueLingkup})
+	}
+	return lp
+}
+
+// bersihkanLingkupPutaran dipasang di kepala perulangan: sebelum kondisi dihitung dan sebelum isi
+// dijalankan, variabel dari putaran sebelumnya harus sudah hilang.
+func (k *kompiler) bersihkanLingkupPutaran(lp lingkupPutaran) {
+	if lp.pakaiUlang {
+		k.emit(opLingkupBersihkan, 0, 0, nil)
+	}
+}
+
+func (k *kompiler) akhiriLingkupPutaran(lp lingkupPutaran) {
+	if lp.pakaiUlang {
+		k.lepas = k.lepas[:len(k.lepas)-1]
+		k.emit(opLingkupKeluar, 0, 0, nil)
+	}
+}
+
+// isiPerulangan: isi satu putaran, di lingkup baru bila perlu.
+func (k *kompiler) isiPerulangan(stmts []Node, variabel string, lp lingkupPutaran) {
+	baru := lp.perlu && !lp.pakaiUlang
+	if baru {
 		k.emit(opLingkupMasuk, 0, 0, nil)
 		k.lepas = append(k.lepas, entriLepas{jenis: ueLingkup})
 	}
@@ -187,10 +220,120 @@ func (k *kompiler) isiPerulangan(stmts []Node, variabel string) {
 	for _, s := range stmts {
 		k.pernyataan(s)
 	}
-	if perlu {
+	if baru {
 		k.lepas = k.lepas[:len(k.lepas)-1]
 		k.emit(opLingkupKeluar, 0, 0, nil)
 	}
+}
+
+// bisaMenangkapLingkup: apakah kode ini membuat fungsi, fungsi anonim, atau kelas (yang
+// menyimpan lingkup tempatnya dibuat).
+func bisaMenangkapLingkup(nodes []Node) bool {
+	for _, n := range nodes {
+		if nodeMenangkapLingkup(n) {
+			return true
+		}
+	}
+	return false
+}
+
+func nodeMenangkapLingkup(n Node) bool {
+	ada := func(xs ...Node) bool {
+		for _, x := range xs {
+			if x != nil && nodeMenangkapLingkup(x) {
+				return true
+			}
+		}
+		return false
+	}
+	switch n := n.(type) {
+	case nil:
+		return false
+	case *NodeFungsi, *NodeFungsiAnonim, *NodeKelas:
+		return true
+	case *NodeTeksFormat:
+		return strings.Contains(n.Template, "fungsi") // isi {...} bisa berupa fungsi anonim
+	case *NodeAngkaAcak:
+		return ada(n.Minimum, n.Maksimum)
+	case *NodeTanya:
+		return ada(n.Pertanyaan)
+	case *NodeOperasiBiner:
+		return ada(n.Kiri, n.Kanan)
+	case *NodeOperasiUnari:
+		return ada(n.Operand)
+	case *NodeDeklarasiVariabel:
+		return ada(n.Ekspresi)
+	case *NodeKonstanta:
+		return ada(n.Ekspresi)
+	case *NodePenugasan:
+		return ada(n.Target, n.Ekspresi)
+	case *NodePenugasanGabungan:
+		return ada(n.Target, n.Ekspresi)
+	case *NodeTambahkan:
+		return ada(n.Nilai, n.Target)
+	case *NodeTampilkan:
+		return bisaMenangkapLingkup(n.Ekspresi)
+	case *NodeTunggu:
+		return ada(n.Lama)
+	case *NodeJika:
+		if ada(n.Kondisi) || bisaMenangkapLingkup(n.BlokJika) || bisaMenangkapLingkup(n.BlokSelainnya) {
+			return true
+		}
+		for _, c := range n.Cabang {
+			if ada(c.Kondisi) || bisaMenangkapLingkup(c.Blok) {
+				return true
+			}
+		}
+	case *NodePilih:
+		if ada(n.Ekspresi) || bisaMenangkapLingkup(n.Bawaan) {
+			return true
+		}
+		for _, c := range n.Kasus {
+			if bisaMenangkapLingkup(c.Nilai) || bisaMenangkapLingkup(c.Blok) {
+				return true
+			}
+		}
+	case *NodeSelama:
+		return ada(n.Kondisi) || bisaMenangkapLingkup(n.Blok)
+	case *NodeUntuk:
+		return ada(n.Dari, n.Sampai, n.Langkah) || bisaMenangkapLingkup(n.Blok)
+	case *NodeUntukSetiap:
+		return ada(n.Iterable) || bisaMenangkapLingkup(n.Blok)
+	case *NodeUlangi:
+		return ada(n.Kondisi) || bisaMenangkapLingkup(n.Blok)
+	case *NodeUlangiKali:
+		return ada(n.Jumlah) || bisaMenangkapLingkup(n.Blok)
+	case *NodePanggilFungsi:
+		return ada(n.Fungsi) || bisaMenangkapLingkup(n.Argumen)
+	case *NodeKembalikan:
+		return ada(n.Ekspresi)
+	case *NodeDaftar:
+		return bisaMenangkapLingkup(n.Elemen)
+	case *NodeKamus:
+		for _, p := range n.Pasangan {
+			if ada(p[0], p[1]) {
+				return true
+			}
+		}
+	case *NodeAksesDaftar:
+		return ada(n.Objek, n.Indeks)
+	case *NodeIrisanDaftar:
+		return ada(n.Objek, n.Awal, n.Akhir)
+	case *NodeAksesAtribut:
+		return ada(n.Objek)
+	case *NodeCoba:
+		if bisaMenangkapLingkup(n.BlokCoba) || bisaMenangkapLingkup(n.BlokAkhirnya) {
+			return true
+		}
+		for _, p := range n.Penangkap {
+			if bisaMenangkapLingkup(p.Blok) {
+				return true
+			}
+		}
+	case *NodeLempar:
+		return ada(n.Ekspresi)
+	}
+	return false
 }
 
 // ---- Pernyataan ----
@@ -237,14 +380,17 @@ func (k *kompiler) pernyataan(n Node) {
 	case *NodePilih:
 		k.pilih(n)
 	case *NodeSelama:
+		lp := k.mulaiLingkupPutaran(n.Blok, "", n.Kondisi)
 		info := k.mulaiPerulangan()
 		kepala := k.alamat()
+		k.bersihkanLingkupPutaran(lp)
 		k.ekspresi(n.Kondisi)
 		jSelesai := k.emit(opLompatSalah, 0, 0, nil)
-		k.isiPerulangan(n.Blok, "")
+		k.isiPerulangan(n.Blok, "", lp)
 		k.emit(opLompat, kepala, 0, nil)
 		k.tambal(jSelesai)
 		k.akhiriPerulangan(info, kepala)
+		k.akhiriLingkupPutaran(lp)
 	case *NodeUntuk:
 		k.ekspresi(n.Dari)
 		k.ekspresi(n.Sampai)
@@ -254,48 +400,61 @@ func (k *kompiler) pernyataan(n Node) {
 			k.emit(opKonstanta, k.konstanta(1), 0, nil)
 		}
 		k.emit(opUntukSiapkan, 0, 0, n)
+		lp := k.mulaiLingkupPutaran(n.Blok, n.Variabel)
 		info := k.mulaiPerulangan()
 		kepala := k.alamat()
 		jSelesai := k.emit(opUntukCek, 0, 0, n)
+		k.bersihkanLingkupPutaran(lp)
 		k.emit(opUntukNilai, 0, 0, nil)
-		k.isiPerulangan(n.Blok, n.Variabel)
+		k.isiPerulangan(n.Blok, n.Variabel, lp)
 		lanjut := k.alamat()
 		k.emit(opUntukLangkah, 0, 0, n)
 		k.emit(opLompat, kepala, 0, nil)
 		k.tambal(jSelesai)
 		k.akhiriPerulangan(info, lanjut)
+		k.akhiriLingkupPutaran(lp)
 		k.emit(opBuangN, 3, 0, nil)
 	case *NodeUntukSetiap:
 		k.ekspresi(n.Iterable)
 		k.emit(opIterBuat, 0, 0, n)
+		lp := k.mulaiLingkupPutaran(n.Blok, n.Variabel)
 		info := k.mulaiPerulangan()
 		kepala := k.alamat()
 		jSelesai := k.emit(opIterLanjut, 0, 0, nil)
-		k.isiPerulangan(n.Blok, n.Variabel)
+		k.bersihkanLingkupPutaran(lp)
+		k.isiPerulangan(n.Blok, n.Variabel, lp)
 		k.emit(opLompat, kepala, 0, nil)
 		k.tambal(jSelesai)
 		k.akhiriPerulangan(info, kepala)
+		k.akhiriLingkupPutaran(lp)
 		k.emit(opBuang, 0, 0, nil)
 	case *NodeUlangi:
+		lp := k.mulaiLingkupPutaran(n.Blok, "", n.Kondisi)
 		info := k.mulaiPerulangan()
 		mulai := k.alamat()
-		k.isiPerulangan(n.Blok, "")
+		k.bersihkanLingkupPutaran(lp)
+		k.isiPerulangan(n.Blok, "", lp)
 		lanjut := k.alamat()
+		k.bersihkanLingkupPutaran(lp) // kondisi 'sampai' dihitung di luar lingkup isi perulangan
 		k.ekspresi(n.Kondisi)
 		jSelesai := k.emit(opLompatSalah, 0, 0, nil)
 		k.emit(opLompat, mulai, 0, nil)
 		k.tambal(jSelesai)
 		k.akhiriPerulangan(info, lanjut)
+		k.akhiriLingkupPutaran(lp)
 	case *NodeUlangiKali:
 		k.ekspresi(n.Jumlah)
 		k.emit(opKaliSiapkan, 0, 0, n)
+		lp := k.mulaiLingkupPutaran(n.Blok, "")
 		info := k.mulaiPerulangan()
 		kepala := k.alamat()
 		jSelesai := k.emit(opKaliLanjut, 0, 0, nil)
-		k.isiPerulangan(n.Blok, "")
+		k.bersihkanLingkupPutaran(lp)
+		k.isiPerulangan(n.Blok, "", lp)
 		k.emit(opLompat, kepala, 0, nil)
 		k.tambal(jSelesai)
 		k.akhiriPerulangan(info, kepala)
+		k.akhiriLingkupPutaran(lp)
 		k.emit(opBuang, 0, 0, nil)
 	case *NodeBerhenti:
 		info := k.perulanganTerdekat()
@@ -508,6 +667,11 @@ func (k *kompiler) kompilasiFungsi(nama string, params []Parameter, blok []Node,
 			bawaan = anak.kode
 		}
 		proto.Bawaan = append(proto.Bawaan, bawaan)
+	}
+	if ekspresi != nil {
+		proto.daurUlang = !nodeMenangkapLingkup(ekspresi)
+	} else {
+		proto.daurUlang = !bisaMenangkapLingkup(blok)
 	}
 	anak := k.m.kompilerBaru(nama, true)
 	if ekspresi != nil {

@@ -45,7 +45,7 @@ class _WaktuPalsu(datetime):
         return JAM
 
 
-class _WaktuHabis(Exception):
+class _WaktuHabis(BaseException):  # bukan Exception, agar tidak tertangkap 'coba' di program
     pass
 
 
@@ -122,6 +122,7 @@ def jalankan(kode: str, masukan: list) -> dict | None:
     """Jalankan satu program dengan interpreter Python. None bila terlalu lama (dilewati)."""
     from indonesia import _NODE_EKSPRESI
     from src import builtins as bawaan
+    from src.bk_types import TeksKesalahan
     from src.builtins import _ke_teks
     from src.errors import KesalahanIndonesia
     from src.interpreter import Interpreter
@@ -140,8 +141,19 @@ def jalankan(kode: str, masukan: list) -> dict | None:
     def waktu_habis(*_):
         raise _WaktuHabis
 
+    # Exception Python mentah (MemoryError, RecursionError, ...) yang tertangkap 'coba' adalah
+    # kebocoran interpreter Python; mesin Go memberi pesan berbahasa Indonesia di sana.
+    bocor = []
+    teks_kesalahan_asli = TeksKesalahan.__new__
+
+    def teks_kesalahan(cls, kesalahan):
+        if not isinstance(kesalahan, KesalahanIndonesia):
+            bocor.append(type(kesalahan).__name__)
+        return teks_kesalahan_asli(cls, kesalahan)
+
     asli = (builtins.input, time.sleep, bawaan.datetime)
     builtins.input, time.sleep, bawaan.datetime = masukan_palsu, (lambda detik: None), _WaktuPalsu
+    TeksKesalahan.__new__ = teks_kesalahan
     random.seed(BENIH)
     folder_asal, folder = os.getcwd(), tempfile.mkdtemp()
     os.chdir(folder)
@@ -165,9 +177,13 @@ def jalankan(kode: str, masukan: list) -> dict | None:
     finally:
         signal.alarm(0)
         builtins.input, time.sleep, bawaan.datetime = asli
+        TeksKesalahan.__new__ = teks_kesalahan_asli
         os.chdir(folder_asal)
         shutil.rmtree(folder, ignore_errors=True)
     hasil["keluaran"] = layar.getvalue()
+    if bocor:
+        hasil["kesalahan"] = f"INTERNAL {bocor[0]} tertangkap 'coba'"
+        hasil["internal"] = True
     return hasil
 
 

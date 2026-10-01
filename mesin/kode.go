@@ -61,6 +61,7 @@ const (
 	opLempar                         // lempar nilai sebagai KesalahanNilai
 	opSimpanHasil                    // simpan nilai teratas sebagai hasil (REPL)
 	opBuangN                         // A: jumlah nilai yang dibuang
+	opLingkupBersihkan               // kosongkan lingkup saat ini (lingkup perulangan yang dipakai ulang)
 )
 
 // Kode operator untuk opBiner.
@@ -115,6 +116,9 @@ type KodeFungsi struct {
 	simbol    []int32
 	Bawaan    []*Kode // nilai bawaan parameter, dihitung saat pemanggilan (nil bila tidak ada)
 	Kode      *Kode
+	// daurUlang: isi fungsi tidak membuat fungsi/kelas, jadi lingkup pemanggilannya tidak mungkin
+	// ditangkap closure dan boleh dipakai ulang setelah fungsi selesai.
+	daurUlang bool
 }
 
 // Fungsi adalah fungsi buatan pengguna beserta lingkup tempat ia dibuat (closure).

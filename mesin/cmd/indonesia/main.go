@@ -40,6 +40,11 @@ var banner = `
 Blok (jika, selama, fungsi, ...) diakhiri dengan baris kosong.
 `
 
+// penyeimbang menaikkan ambang pengumpulan sampah (GC). Program seperti s = s + "x" di dalam
+// perulangan membuat banyak teks sementara padahal data yang hidup sangat sedikit; tanpa ini GC
+// berjalan terus-menerus. Memori ini tidak pernah disentuh, jadi tidak benar-benar terpakai.
+var penyeimbang = make([]byte, 64<<20)
+
 // ---- Keluaran ----
 
 // keluaran menulis ke layar. Bila layar bukan terminal (dialihkan ke berkas atau pipa),

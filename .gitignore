@@ -8,3 +8,9 @@ web/.cache/
 web/node_modules/
 vscode/node_modules/
 *.vsix
+
+# Mesin Go
+*.test
+mesin/indonesia
+mesin/*.prof
+mesin/*.out

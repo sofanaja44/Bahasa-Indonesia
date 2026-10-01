@@ -33,17 +33,38 @@ type GalatInternal struct{ Pesan string }
 
 func (g *GalatInternal) Error() string { return g.Pesan }
 
+type entriLingkup struct {
+	sym   int32
+	tetap bool
+	nilai any
+}
+
 // Lingkup adalah satu tingkat variabel (blok, fungsi). Lingkup global disimpan terpisah di Mesin.
+// Tiga variabel pertama disimpan di dalam struct itu sendiri, jadi kebanyakan lingkup cukup
+// satu alokasi memori.
 type Lingkup struct {
 	induk *Lingkup
-	sym   []int32
-	nilai []any
-	tetap []bool
+	isi   []entriLingkup
+	kecil [3]entriLingkup
+}
+
+func lingkupBaru(induk *Lingkup) *Lingkup {
+	l := &Lingkup{induk: induk}
+	l.isi = l.kecil[:0]
+	return l
+}
+
+// bersihkan menghapus semua variabel lingkup ini (dipakai ulang tanpa alokasi baru).
+func (l *Lingkup) bersihkan() {
+	for i := range l.isi {
+		l.isi[i] = entriLingkup{}
+	}
+	l.isi = l.isi[:0]
 }
 
 func (l *Lingkup) cari(s int32) int {
-	for i, x := range l.sym {
-		if x == s {
+	for i := range l.isi {
+		if l.isi[i].sym == s {
 			return i
 		}
 	}
@@ -52,15 +73,13 @@ func (l *Lingkup) cari(s int32) int {
 
 func (l *Lingkup) definisikan(s int32, v any, tetap bool) {
 	if i := l.cari(s); i >= 0 {
-		l.nilai[i] = v
+		l.isi[i].nilai = v
 		if tetap {
-			l.tetap[i] = true
+			l.isi[i].tetap = true
 		}
 		return
 	}
-	l.sym = append(l.sym, s)
-	l.nilai = append(l.nilai, v)
-	l.tetap = append(l.tetap, tetap)
+	l.isi = append(l.isi, entriLingkup{s, tetap, v})
 }
 
 type penangan struct {
@@ -76,6 +95,7 @@ type bingkai struct {
 	dasar    int
 	penangan []penangan
 	instansi *Instansi // pemanggilan 'inisialisasi': hasilnya instansi ini
+	daur     *Lingkup  // lingkup pemanggilan yang boleh dipakai ulang setelah bingkai ini selesai
 	hitung   bool      // dihitung dalam batas rekursi
 	batas    bool      // putaran mesin berhenti ketika bingkai ini selesai
 }
@@ -101,6 +121,8 @@ type Mesin struct {
 	bingkai     []*bingkai
 	kedalaman   int
 	acak        *acakPython
+	cadangan    []*bingkai // bingkai bekas yang bisa dipakai ulang
+	cadanganL   []*Lingkup // lingkup pemanggilan bekas (fungsi tanpa closure)
 	hasil       any
 	adaHasil    bool
 	langkah     uint32
@@ -208,7 +230,9 @@ func (m *Mesin) jalankanSumber(kode string, repl bool) (hasil any, ada bool, err
 
 // jalankanKode menjalankan kode sampai selesai dan mengembalikan nilai kembaliannya.
 func (m *Mesin) jalankanKode(kode *Kode, lingkup *Lingkup) any {
-	m.bingkai = append(m.bingkai, &bingkai{kode: kode, lingkup: lingkup, dasar: len(m.tumpukan), batas: true})
+	f := m.bingkaiBaru()
+	f.kode, f.lingkup, f.dasar, f.batas = kode, lingkup, len(m.tumpukan), true
+	m.bingkai = append(m.bingkai, f)
 	batas := len(m.bingkai) - 1
 	for {
 		hasil, err := m.cobaPutar()
@@ -261,7 +285,37 @@ func (m *Mesin) lepasBingkai(f *bingkai) {
 		m.kedalaman--
 	}
 	m.tumpukan = m.tumpukan[:f.dasar]
+	m.bingkai[len(m.bingkai)-1] = nil
 	m.bingkai = m.bingkai[:len(m.bingkai)-1]
+	if l := f.daur; l != nil && len(m.cadanganL) < 256 {
+		l.bersihkan()
+		l.induk = nil
+		m.cadanganL = append(m.cadanganL, l)
+	}
+	*f = bingkai{penangan: f.penangan[:0]}
+	m.cadangan = append(m.cadangan, f)
+}
+
+// lingkupPanggilan: lingkup baru untuk memanggil fn, dari cadangan bila fungsi itu tanpa closure.
+func (m *Mesin) lingkupPanggilan(fn *Fungsi, induk *Lingkup) *Lingkup {
+	if fn.proto.daurUlang {
+		if n := len(m.cadanganL); n > 0 {
+			l := m.cadanganL[n-1]
+			m.cadanganL = m.cadanganL[:n-1]
+			l.induk = induk
+			return l
+		}
+	}
+	return lingkupBaru(induk)
+}
+
+func (m *Mesin) bingkaiBaru() *bingkai {
+	if n := len(m.cadangan); n > 0 {
+		f := m.cadangan[n-1]
+		m.cadangan = m.cadangan[:n-1]
+		return f
+	}
+	return &bingkai{}
 }
 
 func (m *Mesin) dorong(v any) { m.tumpukan = append(m.tumpukan, v) }
@@ -288,8 +342,8 @@ func galatDiBaris(jenis, pesan string, ins *instruksi) *Kesalahan {
 func (m *Mesin) semuaNama(l *Lingkup) []string {
 	ada := map[string]bool{}
 	for ; l != nil; l = l.induk {
-		for _, s := range l.sym {
-			ada[m.namaSimbol[s]] = true
+		for _, e := range l.isi {
+			ada[m.namaSimbol[e.sym]] = true
 		}
 	}
 	for s, a := range m.globalAda {
@@ -302,9 +356,9 @@ func (m *Mesin) semuaNama(l *Lingkup) []string {
 
 func (m *Mesin) ambilVariabel(f *bingkai, s int32, ins *instruksi) any {
 	for l := f.lingkup; l != nil; l = l.induk {
-		for i, x := range l.sym {
-			if x == s {
-				return l.nilai[i]
+		for i := range l.isi {
+			if l.isi[i].sym == s {
+				return l.isi[i].nilai
 			}
 		}
 	}
@@ -316,28 +370,28 @@ func (m *Mesin) ambilVariabel(f *bingkai, s int32, ins *instruksi) any {
 }
 
 func (m *Mesin) setelVariabel(f *bingkai, s int32, v any, ins *instruksi) {
-	nama := m.namaSimbol[s]
+	nama := func() string { return m.namaSimbol[s] }
 	for l := f.lingkup; l != nil; l = l.induk {
 		if i := l.cari(s); i >= 0 {
-			if l.tetap[i] {
-				panic(galatDi(KNama, "Tidak bisa mengubah konstanta '"+nama+"'", ins))
+			if l.isi[i].tetap {
+				panic(galatDi(KNama, "Tidak bisa mengubah konstanta '"+nama()+"'", ins))
 			}
-			l.nilai[i] = v
+			l.isi[i].nilai = v
 			return
 		}
 	}
 	if int(s) < len(m.globalAda) && m.globalAda[s] {
 		if m.globalTetap[s] {
-			panic(galatDi(KNama, "Tidak bisa mengubah konstanta '"+nama+"'", ins))
+			panic(galatDi(KNama, "Tidak bisa mengubah konstanta '"+nama()+"'", ins))
 		}
 		m.globalNilai[s] = v
 		return
 	}
-	saran := saranNama(nama, m.semuaNama(f.lingkup))
+	saran := saranNama(nama(), m.semuaNama(f.lingkup))
 	if saran == "" {
-		saran = " Untuk membuat variabel baru, tulis: buat " + nama + " adalah ..."
+		saran = " Untuk membuat variabel baru, tulis: buat " + nama() + " adalah ..."
 	}
-	panic(galatDi(KNama, "Variabel '"+nama+"' belum dideklarasikan."+saran, ins))
+	panic(galatDi(KNama, "Variabel '"+nama()+"' belum dideklarasikan."+saran, ins))
 }
 
 func (m *Mesin) definisikan(f *bingkai, s int32, v any, tetap bool) {
@@ -381,9 +435,11 @@ func (m *Mesin) putar() any {
 		case opSetel:
 			m.setelVariabel(f, ins.a, m.ambilAtas(), ins)
 		case opLingkupMasuk:
-			f.lingkup = &Lingkup{induk: f.lingkup}
+			f.lingkup = lingkupBaru(f.lingkup)
 		case opLingkupKeluar:
 			f.lingkup = f.lingkup.induk
+		case opLingkupBersihkan:
+			f.lingkup.bersihkan()
 		case opBiner:
 			b := m.ambilAtas()
 			a := m.ambilAtas()
@@ -418,8 +474,9 @@ func (m *Mesin) putar() any {
 			if f.instansi != nil {
 				hasil = f.instansi
 			}
+			batas := f.batas
 			m.lepasBingkai(f)
-			if f.batas {
+			if batas {
 				return hasil
 			}
 			m.dorong(hasil)
@@ -615,7 +672,7 @@ func (m *Mesin) panggil(f *bingkai, ins *instruksi) {
 	args := m.tumpukan[n-argc : n]
 	switch c := callee.(type) {
 	case *Fungsi:
-		lingkup := &Lingkup{induk: c.lingkup}
+		lingkup := m.lingkupPanggilan(c, c.lingkup)
 		m.ikatParameter(c, args, lingkup, false, ins)
 		m.tumpukan = m.tumpukan[:n-argc-1]
 		m.mulaiFungsi(c, lingkup, nil, ins)
@@ -660,7 +717,7 @@ func (m *Mesin) panggil(f *bingkai, ins *instruksi) {
 }
 
 func (m *Mesin) lingkupMetode(metode *MetodeTerikat) *Lingkup {
-	lingkup := &Lingkup{induk: metode.Fungsi.lingkup}
+	lingkup := m.lingkupPanggilan(metode.Fungsi, metode.Fungsi.lingkup)
 	lingkup.definisikan(m.simbolUntuk("diri"), metode.Instansi, false)
 	if k := metode.Fungsi.Kelas; k != nil && k.Induk != nil {
 		induk := &Induk{metode.Instansi, k.Induk}
@@ -701,7 +758,12 @@ func (m *Mesin) mulaiFungsi(fn *Fungsi, lingkup *Lingkup, inst *Instansi, ins *i
 			"pastikan ada kondisi untuk berhenti.", fn.Nama), ins))
 	}
 	m.kedalaman++
-	m.bingkai = append(m.bingkai, &bingkai{kode: fn.proto.Kode, lingkup: lingkup, dasar: len(m.tumpukan), instansi: inst, hitung: true})
+	f := m.bingkaiBaru()
+	f.kode, f.lingkup, f.dasar, f.instansi, f.hitung = fn.proto.Kode, lingkup, len(m.tumpukan), inst, true
+	if fn.proto.daurUlang {
+		f.daur = lingkup
+	}
+	m.bingkai = append(m.bingkai, f)
 }
 
 // panggilBawaan menjalankan fungsi bawaan dan menerjemahkan kesalahannya, seperti _eval_panggil().
@@ -781,8 +843,85 @@ func negasi(v any, ins *instruksi) any {
 	panic(galatDi(KTipe, "Tanda minus hanya untuk angka, bukan '"+keTeks(v)+"'", ins))
 }
 
-// hitungBiner sama dengan _hitung_biner().
-func (m *Mesin) hitungBiner(op int, kiri, kanan any, ins *instruksi) (hasil any) {
+// hitungBiner sama dengan _hitung_biner(). Jalur cepat untuk dua bilangan bulat 64 bit atau dua
+// desimal; kasus lain (bilangan besar, teks, kesalahan) lewat hitungBinerUmum.
+func (m *Mesin) hitungBiner(op int, kiri, kanan any, ins *instruksi) any {
+	switch a := kiri.(type) {
+	case int:
+		b, ok := kanan.(int)
+		if !ok {
+			break
+		}
+		switch op {
+		case biTambah:
+			if s := a + b; (s > a) == (b > 0) {
+				return s
+			}
+		case biKurang:
+			if s := a - b; (s < a) == (b > 0) {
+				return s
+			}
+		case biKali:
+			return kaliBulat(a, b)
+		case biSisa:
+			if b != 0 && b != -1 {
+				r := a % b
+				if r != 0 && (r < 0) != (b < 0) {
+					r += b
+				}
+				return r
+			}
+		case biBagi:
+			if b != 0 && a <= 1<<53 && a >= -(1<<53) && b <= 1<<53 && b >= -(1<<53) {
+				return float64(a) / float64(b)
+			}
+		case biSama:
+			return a == b
+		case biTidakSama:
+			return a != b
+		case biLebih:
+			return a > b
+		case biKurangDari:
+			return a < b
+		case biLebihSama:
+			return a >= b
+		case biKurangSama:
+			return a <= b
+		}
+	case float64:
+		b, ok := kanan.(float64)
+		if !ok {
+			break
+		}
+		switch op {
+		case biTambah:
+			return a + b
+		case biKurang:
+			return a - b
+		case biKali:
+			return a * b
+		case biBagi:
+			if b != 0 {
+				return a / b
+			}
+		case biSama:
+			return a == b
+		case biTidakSama:
+			return a != b
+		case biLebih:
+			return a > b
+		case biKurangDari:
+			return a < b
+		case biLebihSama:
+			return a >= b
+		case biKurangSama:
+			return a <= b
+		}
+	}
+	return m.hitungBinerUmum(op, kiri, kanan, ins)
+}
+
+func (m *Mesin) hitungBinerUmum(op int, kiri, kanan any, ins *instruksi) (hasil any) {
 	defer func() {
 		if r := recover(); r != nil {
 			if g, ok := r.(galatPython); ok {
