@@ -1,0 +1,6 @@
+# Program dan keluaran yang diharapkan selalu memakai akhir baris LF,
+# supaya tes kesesuaian sama hasilnya di Windows, macOS, dan Linux.
+*.id text eol=lf
+*.keluaran text eol=lf
+*.kesalahan text eol=lf
+*.masukan text eol=lf

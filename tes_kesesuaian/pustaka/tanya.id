@@ -1,0 +1,3 @@
+buat nama adalah tanya "Siapa namamu? "
+buat umur adalah tanya angka "Berapa umurmu? "
+tampilkan format"Halo {nama}, tahun depan kamu {umur ditambah 1} tahun"

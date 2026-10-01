@@ -48,3 +48,22 @@ def test_berkas_tidak_ditemukan():
     hasil = jalankan_cli("tidak_ada.id")
     assert hasil.returncode == 1
     assert "tidak ditemukan" in hasil.stdout
+
+
+def test_repl_blok_beberapa_baris():
+    masukan = "buat x adalah 7\njika x habis dibagi 7:\n    tampilkan \"tujuh\"\n    tampilkan \"selesai\"\n\nx\nkeluar\n"
+    hasil = jalankan_cli("repl", masukan=masukan)
+    assert "tujuh\nselesai" in hasil.stdout
+    assert ">>> 7" in hasil.stdout.replace("... ", "")  # ekspresi 'x' ditampilkan
+    assert "Kesalahan" not in hasil.stdout
+
+
+def test_repl_tidak_menampilkan_hasil_deklarasi():
+    hasil = jalankan_cli("repl", masukan="buat nama adalah \"Budi\"\nkeluar\n")
+    assert "Budi" not in hasil.stdout
+
+
+def test_eval_kesalahan_keluar_dengan_kode_1():
+    hasil = jalankan_cli("-e", "tampilkan 1 dibagi 0")
+    assert hasil.returncode == 1
+    assert "KesalahanBagiNol" in hasil.stderr

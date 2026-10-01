@@ -1,0 +1,6 @@
+tampilkan jenis(jam sekarang), jenis(waktu sekarang), jenis(hari ini), jenis(tahun ini)
+tampilkan hari ini ada dalam ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+tampilkan panjang(waktu sekarang)
+impor waktu
+tampilkan waktu.tahun() adalah tahun ini
+tunggu 0 detik

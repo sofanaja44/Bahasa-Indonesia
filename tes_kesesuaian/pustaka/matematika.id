@@ -1,0 +1,8 @@
+impor matematika
+tampilkan matematika.akar(16), matematika.pangkat(2, 8), matematika.mutlak(-3)
+tampilkan matematika.bulatkan(2.5), matematika.bulatkan(3.14159, 2), matematika.bulatkan_bawah(2.9), matematika.bulatkan_atas(2.1)
+tampilkan matematika.sinus(30), matematika.kosinus(60), matematika.tangen(45)
+tampilkan matematika.fpb(12, 18), matematika.kpk(4, 6), matematika.faktorial(5)
+tampilkan matematika.logaritma(1000), matematika.bulatkan(matematika.pi, 4)
+dari matematika impor akar sebagai akar_kuadrat
+tampilkan akar_kuadrat(81)

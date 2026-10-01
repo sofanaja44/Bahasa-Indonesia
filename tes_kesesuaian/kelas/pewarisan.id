@@ -1,0 +1,18 @@
+kelas Hewan:
+    fungsi inisialisasi(nama, suara):
+        diri.nama adalah nama
+        diri.suara adalah suara
+
+    fungsi bersuara():
+        kembalikan format"{diri.nama} berkata {diri.suara}"
+
+kelas Kucing mewarisi Hewan:
+    fungsi inisialisasi(nama):
+        induk.inisialisasi(nama, "meong")
+        diri.nyawa adalah 9
+
+buat kucing adalah Kucing("Belang")
+tampilkan kucing.bersuara(), kucing.nyawa
+kurangi kucing.nyawa dengan 1
+kucing.nyawa -= 1
+tampilkan kucing.nyawa

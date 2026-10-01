@@ -46,8 +46,24 @@ class NodeIdentifier:
 
 @dataclass
 class NodeWaktuSekarang:
-    """jam sekarang / menit sekarang / detik sekarang / waktu sekarang"""
+    """jam sekarang / waktu sekarang / hari ini / tanggal hari ini / bulan ini / tahun ini"""
     bagian: str = "waktu"
+    baris: int = 0
+    kolom: int = 0
+
+@dataclass
+class NodeAngkaAcak:
+    """angka acak dari <minimum> sampai <maksimum>"""
+    minimum: Any = None
+    maksimum: Any = None
+    baris: int = 0
+    kolom: int = 0
+
+@dataclass
+class NodeTanya:
+    """tanya "Siapa namamu?" / tanya angka "Berapa umurmu?" """
+    pertanyaan: Any = None
+    jenis: str = "teks"
     baris: int = 0
     kolom: int = 0
 
@@ -118,6 +134,7 @@ class NodeTampilkan:
     ekspresi_list: list = field(default_factory=list)
     baris: int = 0
     kolom: int = 0
+    baris_baru: bool = True  # False untuk 'cetak': tidak pindah baris
 
 
 @dataclass
@@ -143,7 +160,7 @@ class NodeJika:
 @dataclass
 class NodePilih:
     ekspresi: Any = None
-    kasus: list = field(default_factory=list)
+    kasus: list = field(default_factory=list)  # [([nilai, ...], blok), ...]
     bawaan: Optional[list] = None
     baris: int = 0
     kolom: int = 0

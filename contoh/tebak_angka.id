@@ -1,0 +1,23 @@
+# ==================================================
+# Permainan: Tebak Angka
+# Komputer memikirkan sebuah angka, kamu menebaknya.
+# Jalankan: python indonesia.py contoh/tebak_angka.id
+# ==================================================
+
+buat rahasia adalah angka acak dari 1 sampai 100
+buat kesempatan adalah 7
+buat menang adalah salah
+
+tampilkan "Aku sedang memikirkan sebuah angka dari 1 sampai 100."
+tampilkan "Kamu punya", kesempatan, "kesempatan untuk menebaknya."
+
+selama kesempatan lebih dari 0 dan tidak menang, lakukan:
+    buat tebakan adalah tanya angka "Tebakanmu: "
+    kurangi kesempatan dengan 1
+
+    jika tebakan adalah rahasia, maka ubah menang menjadi benar
+    atau jika tebakan kurang dari rahasia, maka tampilkan "Terlalu kecil! Sisa kesempatan:", kesempatan
+    jika tidak, tampilkan "Terlalu besar! Sisa kesempatan:", kesempatan
+
+jika menang, maka tampilkan "Hebat! Angkanya memang", rahasia
+jika tidak, tampilkan "Kesempatan habis. Angka rahasianya adalah", rahasia

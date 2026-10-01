@@ -1,0 +1,3 @@
+fungsi selamanya(n):
+    kembalikan selamanya(n ditambah 1)
+selamanya(1)

@@ -3,8 +3,15 @@ environment.py — Manajemen scope/lingkungan variabel untuk bahasa Indonesia.
 """
 
 from __future__ import annotations
+import difflib
 from typing import Any, Optional
 from src.errors import KesalahanNama
+
+
+def saran_nama(nama: str, kandidat) -> str:
+    """" Maksud Anda 'nama'?" bila ada nama yang mirip, selain itu teks kosong."""
+    mirip = difflib.get_close_matches(nama, list(kandidat), n=1, cutoff=0.7)
+    return f" Maksud Anda '{mirip[0]}'?" if mirip else ""
 
 
 class Lingkungan:
@@ -24,32 +31,40 @@ class Lingkungan:
 
     def dapatkan(self, nama: str, baris: int = 0, kolom: int = 0) -> Any:
         """Cari variabel dari scope terdalam ke terluar."""
-        if nama in self.variabel:
-            return self.variabel[nama]
-        if self.induk is not None:
-            return self.induk.dapatkan(nama, baris, kolom)
+        env = self
+        while env is not None:
+            if nama in env.variabel:
+                return env.variabel[nama]
+            env = env.induk
         raise KesalahanNama(
-            f"Variabel '{nama}' belum dideklarasikan",
+            f"Variabel '{nama}' belum dideklarasikan.{saran_nama(nama, self.semua_nama())}",
             baris=baris, kolom=kolom,
         )
 
     def setel(self, nama: str, nilai: Any, baris: int = 0, kolom: int = 0):
         """Ubah nilai variabel yang sudah ada."""
-        if nama in self.variabel:
-            if nama in self.konstanta:
-                raise KesalahanNama(
-                    f"Tidak bisa mengubah konstanta '{nama}'",
-                    baris=baris, kolom=kolom,
-                )
-            self.variabel[nama] = nilai
-            return
-        if self.induk is not None:
-            self.induk.setel(nama, nilai, baris, kolom)
-            return
-        raise KesalahanNama(
-            f"Variabel '{nama}' belum dideklarasikan",
-            baris=baris, kolom=kolom,
-        )
+        env = self
+        while env is not None:
+            if nama in env.variabel:
+                if nama in env.konstanta:
+                    raise KesalahanNama(
+                        f"Tidak bisa mengubah konstanta '{nama}'",
+                        baris=baris, kolom=kolom,
+                    )
+                env.variabel[nama] = nilai
+                return
+            env = env.induk
+        saran = saran_nama(nama, self.semua_nama()) or f" Untuk membuat variabel baru, tulis: buat {nama} adalah ..."
+        raise KesalahanNama(f"Variabel '{nama}' belum dideklarasikan.{saran}", baris=baris, kolom=kolom)
+
+    def semua_nama(self) -> set:
+        """Semua nama yang terlihat dari scope ini (untuk saran salah ketik)."""
+        nama = set()
+        env = self
+        while env is not None:
+            nama.update(env.variabel)
+            env = env.induk
+        return nama
 
     def ada(self, nama: str) -> bool:
         """Cek apakah variabel ada di scope manapun."""

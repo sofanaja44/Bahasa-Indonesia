@@ -1,0 +1,6 @@
+buat nama adalah "Budi"
+buat umur adalah 17
+tampilkan format"{nama} berumur {umur} tahun"
+tampilkan f"Tahun depan {umur ditambah 1}"
+tampilkan format"{umur adalah 17}"
+tampilkan "Halo, " + nama + "!"

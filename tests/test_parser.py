@@ -741,3 +741,70 @@ class TestKetegasanParser:
     def test_indentasi_tak_terduga_error(self):
         with pytest.raises(KesalahanSintaks, match="menjorok"):
             ast("tampilkan 1\n    tampilkan 2")
+
+
+# ============================================================
+# Tahap 1: kosakata baru dan pesan kesalahan
+# ============================================================
+
+class TestKosakataBaru:
+    def test_angka_acak(self):
+        node = ast("buat dadu adalah angka acak dari 1 sampai 6").pernyataan[0]
+        assert isinstance(node.ekspresi, NodeAngkaAcak)
+        assert node.ekspresi.maksimum.nilai == 6
+
+    def test_angka_acak_tanpa_dari_error(self):
+        with pytest.raises(KesalahanSintaks, match="angka acak dari 1 sampai 6"):
+            ast("buat dadu adalah angka acak 6")
+
+    def test_tanya(self):
+        teks = ast('buat nama adalah tanya "Siapa? "').pernyataan[0].ekspresi
+        angka = ast('buat umur adalah tanya angka "Umur? "').pernyataan[0].ekspresi
+        assert isinstance(teks, NodeTanya) and teks.jenis == "teks"
+        assert isinstance(angka, NodeTanya) and angka.jenis == "angka"
+
+    def test_tanya_dengan_kurung_adalah_panggilan_fungsi(self):
+        assert isinstance(ast('tanya("Siapa? ")').pernyataan[0], NodePanggilFungsi)
+
+    def test_cetak_tidak_pindah_baris(self):
+        assert ast('cetak "a"').pernyataan[0].baris_baru is False
+        assert ast('tampilkan "a"').pernyataan[0].baris_baru is True
+
+    def test_ketika_beberapa_nilai(self):
+        node = ast('pilih x:\n    ketika "a" atau "b", "c": tampilkan 1').pernyataan[0]
+        nilai, blok = node.kasus[0]
+        assert [n.nilai for n in nilai] == ["a", "b", "c"]
+
+    def test_waktu_tanggal(self):
+        node = ast("tampilkan hari ini, tanggal hari ini, bulan ini, tahun ini").pernyataan[0]
+        assert [e.bagian for e in node.ekspresi_list] == ["hari", "tanggal", "bulan", "tahun"]
+
+    def test_impor_kata_kunci_butuh_nama_lain(self):
+        with pytest.raises(KesalahanSintaks, match="sebagai pilih_acak"):
+            ast("dari acak impor pilih")
+        assert isinstance(ast("dari acak impor pilih sebagai pilih_acak").pernyataan[0], NodeDariImpor)
+
+
+class TestPesanKesalahanParser:
+    def test_kata_kunci_sebagai_nama(self):
+        with pytest.raises(KesalahanSintaks, match="'lempar' adalah kata kunci"):
+            ast("buat lempar adalah 5")
+
+    def test_petunjuk_huruf_kecil(self):
+        with pytest.raises(KesalahanSintaks, match="Tulis 'tampilkan', bukan 'Tampilkan'"):
+            ast('Tampilkan "halo"')
+
+    def test_petunjuk_salah_ketik(self):
+        with pytest.raises(KesalahanSintaks, match="maksud Anda 'jika'"):
+            ast("jka x > 5: tampilkan x")
+
+    @pytest.mark.parametrize("kode", ["jika x > 5:", "buat d = [1,", "fungsi f(n):\n    kembalikan n dikali", "ulangi 3 kali:"])
+    def test_belum_selesai_di_akhir_masukan(self, kode):
+        with pytest.raises(KesalahanSintaks) as info:
+            ast(kode)
+        assert info.value.belum_selesai is True
+
+    def test_kesalahan_biasa_bukan_belum_selesai(self):
+        with pytest.raises(KesalahanSintaks) as info:
+            ast("tampilkan 1 tampilkan 2")
+        assert info.value.belum_selesai is False
