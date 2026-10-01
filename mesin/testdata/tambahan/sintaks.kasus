@@ -1,0 +1,121 @@
+=== teks_tidak_ditutup
+tampilkan "halo
+=== kurung_tidak_ditutup
+tampilkan (1 + 2
+=== kurung_lebih
+tampilkan 1 + 2)
+=== indentasi_tidak_cocok
+jika benar:
+    tampilkan 1
+  tampilkan 2
+=== indentasi_tak_terduga
+tampilkan 1
+    tampilkan 2
+=== blok_kosong
+jika benar:
+tampilkan 1
+=== karakter_aneh
+tampilkan 1 $ 2
+=== kata_kunci_besar
+Tampilkan 1
+=== kata_kunci_salah_ketik
+tampilkn 1
+=== jika_tanpa_kondisi
+jika:
+    tampilkan 1
+=== berhenti_di_luar
+berhenti
+=== kembalikan_di_luar
+kembalikan 1
+=== lewati_di_fungsi_dalam_perulangan
+selama benar:
+    fungsi f():
+        lewati
+=== buat_tanpa_nilai
+buat x adalah
+=== buat_tanpa_adalah
+buat x 5
+=== tangkap_jenis_asing2
+coba:
+    tampilkan 1
+tangkap KesalahanAneh:
+    tampilkan 2
+=== format_kosong_kurung
+tampilkan format"{}"
+=== komentar_multibaris
+"""
+komentar
+"""
+tampilkan "setelah komentar" # komentar
+=== angka_desimal_titik_ganda
+tampilkan 1.2.3
+=== operator_ganda
+tampilkan 1 + * 2
+=== daftar_koma_akhir
+tampilkan [1, 2, ]
+=== kamus_koma_akhir
+tampilkan {"a": 1, }
+=== multiline_daftar
+buat d adalah [
+    1,
+    2,
+]
+tampilkan d
+=== penugasan_ke_panggilan
+f() adalah 5
+=== penugasan_ke_angka
+5 adalah 5
+tampilkan "ini perbandingan"
+=== kelas_tanpa_nama
+kelas:
+    buat a adalah 1
+=== fungsi_tanpa_kurung
+fungsi f:
+    kembalikan 1
+=== fungsi_parameter_ganda
+fungsi f(a, a):
+    kembalikan a
+tampilkan f(1, 2)
+=== untuk_tanpa_sampai
+untuk i dari 1:
+    tampilkan i
+=== pilih_tanpa_ketika
+pilih 1:
+    tampilkan 1
+=== coba_tanpa_tangkap
+coba:
+    tampilkan 1
+tampilkan 2
+=== tab_campur
+jika benar:
+	tampilkan "tab"
+=== baris_kosong_banyak
+
+
+tampilkan "a"
+
+
+tampilkan "b"
+=== titik_koma
+tampilkan 1; tampilkan 2
+=== hanya_komentar
+# hanya komentar
+=== kosong_sama_sekali
+
+=== ekspresi_tidak_lengkap
+tampilkan 1 +
+=== kamus_tanpa_titik_dua
+tampilkan {"a" 1}
+=== atribut_kata_kunci
+buat d adalah {}
+tampilkan d.jika
+=== teks_kutip_tunggal_tidak_ditutup
+tampilkan 'abc
+=== angka_diikuti_huruf
+tampilkan 12abc
+=== jika_tidak_tanpa_jika
+jika tidak:
+    tampilkan 1
+=== selainnya_sendiri
+selainnya:
+    tampilkan 1

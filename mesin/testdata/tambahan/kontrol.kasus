@@ -1,0 +1,348 @@
+=== coba_akhirnya_kembalikan
+fungsi f():
+    coba:
+        kembalikan "dari coba"
+    akhirnya:
+        tampilkan "akhirnya jalan"
+tampilkan f()
+=== coba_akhirnya_kembalikan_timpa
+fungsi f():
+    coba:
+        kembalikan "dari coba"
+    akhirnya:
+        kembalikan "dari akhirnya"
+tampilkan f()
+=== coba_akhirnya_berhenti
+untuk i dari 1 sampai 5:
+    coba:
+        jika i adalah 3:
+            berhenti
+        cetak i
+    akhirnya:
+        cetak "a"
+tampilkan
+=== coba_akhirnya_lewati
+untuk i dari 1 sampai 4:
+    coba:
+        jika i habis dibagi 2:
+            lewati
+        cetak i
+    akhirnya:
+        cetak "."
+tampilkan
+=== coba_akhirnya_galat_lewat
+coba:
+    coba:
+        tampilkan 1 / 0
+    akhirnya:
+        tampilkan "dalam akhirnya"
+tangkap KesalahanBagiNol sebagai e:
+    tampilkan "luar:", e, e.jenis, e.pesan
+=== akhirnya_menelan_galat
+untuk i dari 1 sampai 2:
+    coba:
+        tampilkan 1 / 0
+    akhirnya:
+        berhenti
+tampilkan "lanjut"
+=== akhirnya_kembalikan_menelan_galat
+fungsi f():
+    coba:
+        tampilkan 1 / 0
+    akhirnya:
+        kembalikan "tertelan"
+tampilkan f()
+=== akhirnya_galat_baru
+coba:
+    coba:
+        tampilkan 1 / 0
+    akhirnya:
+        tampilkan x
+tangkap sebagai e:
+    tampilkan e.jenis
+=== akhirnya_bersarang_kembalikan
+fungsi f():
+    untuk i dari 1 sampai 3:
+        coba:
+            coba:
+                jika i adalah 2:
+                    kembalikan i
+            akhirnya:
+                cetak "dalam" + ubah_teks(i) + " "
+        akhirnya:
+            cetak "luar" + ubah_teks(i) + " "
+    kembalikan 0
+tampilkan f()
+=== akhirnya_dalam_tangkap_berhenti
+selama benar:
+    coba:
+        lempar "x"
+    tangkap:
+        tampilkan "tangkap"
+        berhenti
+    akhirnya:
+        tampilkan "akhirnya"
+tampilkan "keluar"
+=== tangkap_jenis_tidak_cocok
+coba:
+    tampilkan 1 / 0
+tangkap KesalahanNama:
+    tampilkan "nama"
+=== tangkap_jenis_tidak_cocok_akhirnya
+coba:
+    tampilkan 1 / 0
+tangkap KesalahanNama:
+    tampilkan "nama"
+akhirnya:
+    tampilkan "akhirnya tetap jalan"
+=== tangkap_berurutan
+coba:
+    tampilkan [1][5]
+tangkap KesalahanNama:
+    tampilkan "nama"
+tangkap IndexError sebagai e:
+    tampilkan "indeks:", e
+tangkap:
+    tampilkan "lain"
+=== tangkap_nama_python
+coba:
+    tampilkan {}["x"]
+tangkap KeyError sebagai e:
+    tampilkan e.jenis
+coba:
+    tampilkan x
+tangkap NameError:
+    tampilkan "NameError"
+coba:
+    lempar "a"
+tangkap ValueError:
+    tampilkan "ValueError"
+coba:
+    tampilkan 1 + "a" - 1
+tangkap TypeError:
+    tampilkan "TypeError"
+coba:
+    tampilkan 1 / 0
+tangkap Exception:
+    tampilkan "Exception"
+coba:
+    tampilkan 1 / 0
+tangkap error:
+    tampilkan "error"
+=== tangkap_lempar_ulang_di_tangkap
+coba:
+    coba:
+        lempar "pertama"
+    tangkap sebagai e:
+        lempar "kedua: " + e
+tangkap sebagai e:
+    tampilkan e, e.jenis
+=== tangkap_variabel_kesalahan
+coba:
+    tampilkan x
+tangkap kesalahan:
+    tampilkan kesalahan
+    tampilkan kesalahan.jenis
+=== tangkap_pesan_atribut
+coba:
+    tampilkan 1 / 0
+tangkap sebagai e:
+    tampilkan e.pesan, e.jenis, e == e.pesan, jenis(e), e.panjang(), e[0], e.huruf_besar()
+=== tangkap_atribut_lain
+coba:
+    tampilkan 1 / 0
+tangkap sebagai e:
+    tampilkan e.lain
+=== tangkap_rekursi
+fungsi f(n):
+    kembalikan f(n + 1)
+coba:
+    f(0)
+tangkap KesalahanTumpukan sebagai e:
+    tampilkan "tertangkap", e.jenis
+    tampilkan e
+=== lempar_bukan_teks
+lempar [1, 2]
+=== lempar_angka
+coba:
+    lempar 42
+tangkap sebagai e:
+    tampilkan e, jenis(e), e + "!", panjang(e), e.huruf_besar()
+=== lempar_kosong
+lempar ""
+=== lempar_kesalahan_tangkap
+coba:
+    lempar Kesalahan("Umur negatif")
+tangkap KesalahanNilai sebagai e:
+    tampilkan e, e.jenis
+=== coba_dalam_fungsi_kembalikan_dari_tangkap
+fungsi f():
+    coba:
+        lempar "x"
+    tangkap:
+        kembalikan "dari tangkap"
+    akhirnya:
+        tampilkan "bersih"
+tampilkan f()
+=== coba_bersarang_dalam_perulangan
+buat hasil adalah []
+untuk setiap x dalam [1, 0, 2, "a", 4]:
+    coba:
+        tambahkan 10 / x ke hasil
+    tangkap KesalahanBagiNol:
+        tambahkan "nol" ke hasil
+    tangkap KesalahanTipe sebagai e:
+        tambahkan e.jenis ke hasil
+tampilkan hasil
+=== coba_variabel_lingkup
+coba:
+    buat di_dalam adalah 1
+akhirnya:
+    tampilkan "a"
+tampilkan di_dalam
+=== pilih_banyak
+fungsi nama_hari(n):
+    pilih n:
+        ketika 1, 2, 3:
+            kembalikan "awal"
+        ketika 4 atau 5:
+            kembalikan "tengah"
+        ketika "x":
+            kembalikan "teks"
+        bawaan:
+            kembalikan "lain"
+untuk setiap n dalam [1, 3, 4, 5, 6, "x"]:
+    cetak nama_hari(n) + " "
+tampilkan
+=== pilih_tanpa_bawaan
+pilih 9:
+    ketika 1:
+        tampilkan "satu"
+tampilkan "selesai"
+=== pilih_ekspresi
+buat x adalah 7
+pilih x habis dibagi 7:
+    ketika benar:
+        tampilkan "kelipatan 7"
+    ketika salah:
+        tampilkan "bukan"
+=== untuk_langkah
+untuk i dari 10 sampai 1 langkah -3:
+    cetak i
+tampilkan
+untuk i dari 0 sampai 1 langkah 0.25:
+    cetak i
+    cetak " "
+tampilkan
+untuk i dari 1 sampai 0:
+    tampilkan "tidak jalan"
+untuk i dari 0.1 sampai 0.5 langkah 0.1:
+    cetak i
+    cetak " "
+tampilkan
+=== untuk_langkah_nol
+untuk i dari 1 sampai 3 langkah 0:
+    tampilkan i
+tampilkan "selesai"
+=== untuk_bukan_angka
+untuk i dari "a" sampai 3:
+    tampilkan i
+=== untuk_sampai_bukan_angka
+untuk i dari 1 sampai kosong:
+    tampilkan i
+=== untuk_langkah_logika
+untuk i dari 1 sampai 3 langkah benar:
+    tampilkan i
+=== untuk_variabel_tidak_bocor
+untuk i dari 1 sampai 3:
+    buat kuadrat adalah i * i
+tampilkan i
+=== untuk_ubah_variabel
+untuk i dari 1 sampai 3:
+    cetak i
+    i adalah 100
+tampilkan
+=== untuk_besar
+untuk i dari 2 ** 64 sampai 2 ** 64 + 2:
+    tampilkan i
+=== ulangi_kali_desimal
+ulangi 6 / 2 kali:
+    cetak "x"
+tampilkan
+=== ulangi_kali_salah
+ulangi 2.5 kali:
+    cetak "x"
+=== ulangi_kali_teks
+ulangi "3" kali:
+    cetak "x"
+=== ulangi_kali_negatif
+ulangi -3 kali:
+    tampilkan "x"
+tampilkan "selesai"
+=== ulangi_kali_berhenti
+buat n adalah 0
+ulangi 10 kali:
+    tambahkan 1 ke n
+    jika n adalah 4:
+        berhenti
+tampilkan n
+=== selama_berhenti
+buat i adalah 0
+selama benar:
+    tambahkan 1 ke i
+    jika i lebih dari 5:
+        berhenti
+tampilkan i
+=== selama_lewati
+buat i adalah 0
+selama i < 6:
+    tambahkan 1 ke i
+    jika i habis dibagi 2:
+        lewati
+    cetak i
+tampilkan
+=== ulangi_sampai_lewati
+buat i adalah 0
+ulangi:
+    tambahkan 1 ke i
+    jika i < 3:
+        lewati
+    cetak i
+sampai i adalah 5
+tampilkan
+=== perulangan_bersarang_berhenti
+untuk i dari 1 sampai 3:
+    untuk j dari 1 sampai 3:
+        jika j adalah 2:
+            berhenti
+        cetak format"{i}{j} "
+tampilkan
+=== logika_pendek
+fungsi cetak_balik(x):
+    cetak x
+    kembalikan x
+tampilkan cetak_balik(0) dan cetak_balik(1)
+tampilkan cetak_balik(2) atau cetak_balik(3)
+tampilkan kosong atau "bawaan", [] dan 1, bukan [], bukan "x", 0 atau 0.0 atau ""
+=== jika_bercabang
+fungsi nilai(n):
+    jika n paling sedikit 90:
+        kembalikan "A"
+    atau jika n paling sedikit 80:
+        kembalikan "B"
+    atau kalau n paling sedikit 70:
+        kembalikan "C"
+    jika tidak:
+        kembalikan "D"
+tampilkan nilai(95), nilai(85), nilai(75), nilai(10)
+=== jika_maka
+buat x adalah 5
+jika x > 3 maka tampilkan "besar"
+=== jika_satu_baris
+jika benar: tampilkan "ya"
+=== kalimat_ubah
+buat x adalah 1
+ubah x menjadi 2
+tampilkan x
+ubah x jadi "tiga"
+tampilkan x

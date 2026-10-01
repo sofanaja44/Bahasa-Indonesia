@@ -1,0 +1,154 @@
+=== kelas_dasar
+kelas Titik:
+    buat x adalah 0
+    buat y adalah 0
+    fungsi geser(dx, dy):
+        diri.x adalah diri.x + dx
+        diri.y adalah diri.y + dy
+        kembalikan diri
+buat t adalah Titik()
+t.geser(1, 2).geser(3, 4)
+tampilkan t.x, t.y, t
+=== kelas_atribut_tidak_ada
+kelas K:
+    buat nilai adalah 1
+buat k adalah K()
+tampilkan k.nilia
+=== kelas_metode_tidak_ada
+kelas K:
+    fungsi hitung():
+        kembalikan 1
+buat k adalah K()
+tampilkan k.hitng()
+=== kelas_tanpa_inisialisasi_argumen
+kelas K:
+    buat a adalah 1
+K(5)
+=== kelas_inisialisasi_argumen_kurang
+kelas K:
+    fungsi inisialisasi(a, b):
+        diri.a adalah a
+K(1)
+=== kelas_pewarisan_tiga
+kelas A:
+    buat a adalah 1
+    fungsi nama():
+        kembalikan "A"
+    fungsi sapa():
+        kembalikan "aku " + diri.nama()
+kelas B mewarisi A:
+    buat b adalah 2
+    fungsi nama():
+        kembalikan "B"
+kelas C mewarisi B:
+    fungsi nama():
+        kembalikan "C+" + induk.nama()
+buat c adalah C()
+tampilkan c.sapa(), c.b
+tampilkan c.a
+=== kelas_induk_metode_tidak_ada
+kelas A:
+    fungsi f():
+        kembalikan 1
+kelas B mewarisi A:
+    fungsi g():
+        kembalikan induk.h()
+B().g()
+=== kelas_super
+kelas A:
+    fungsi inisialisasi(n):
+        diri.n adalah n
+kelas B mewarisi A:
+    fungsi inisialisasi():
+        super.inisialisasi(7)
+tampilkan B().n
+=== kelas_induk_tanpa_pewarisan
+kelas A:
+    fungsi f():
+        kembalikan induk
+A().f()
+=== kelas_metode_dengan_diri
+kelas K:
+    fungsi f(diri, x):
+        kembalikan x * 2
+tampilkan K().f(4)
+=== kelas_atribut_kosong
+kelas K:
+    buat isi adalah kosong
+buat k adalah K()
+tampilkan k.isi
+k.isi adalah 3
+tampilkan k.isi
+=== kelas_setel_atribut_bukan_objek
+buat x adalah 5
+x.a adalah 1
+=== kelas_atribut_angka
+buat x adalah 5
+tampilkan x.a
+=== kelas_atribut_daftar_bersama
+kelas K:
+    buat isi adalah []
+buat a adalah K()
+buat b adalah K()
+a.isi.tambahkan(1)
+tampilkan b.isi
+=== kelas_metode_sebagai_nilai
+kelas K:
+    fungsi inisialisasi(n):
+        diri.n adalah n
+    fungsi ambil():
+        kembalikan diri.n
+buat f adalah K(9).ambil
+tampilkan f(), f
+=== kelas_metode_bandingkan
+kelas K:
+    fungsi f():
+        kembalikan 1
+buat k adalah K()
+tampilkan k.f == k.f, k == k, K() == K()
+=== kelas_tampil
+kelas Hewan:
+    buat kaki adalah 4
+tampilkan Hewan, Hewan(), jenis(Hewan()), ubah_teks(Hewan)
+=== kelas_atribut_ditambah
+kelas K:
+    buat a adalah 1
+buat k adalah K()
+k.b adalah 2
+tampilkan k.a, k.b
+=== kelas_metode_bawaan_parameter
+kelas K:
+    fungsi f(x = 10):
+        kembalikan x
+tampilkan K().f(), K().f(3)
+=== kelas_rekursi_metode
+kelas Hitung:
+    fungsi faktorial(n):
+        jika n <= 1:
+            kembalikan 1
+        kembalikan n * diri.faktorial(n - 1)
+tampilkan Hitung().faktorial(10)
+=== kelas_atribut_induk_bawaan
+kelas A:
+    buat warna adalah "merah"
+kelas B mewarisi A:
+    buat ukuran adalah 3
+buat b adalah B()
+tampilkan b.warna, b.ukuran
+=== kelas_kakek_atribut
+kelas A:
+    buat a adalah 1
+kelas B mewarisi A:
+    buat b adalah 2
+kelas C mewarisi B:
+    buat c adalah 3
+buat c adalah C()
+tampilkan c.c, c.b
+tampilkan c.a
+=== kelas_dalam_fungsi
+fungsi buat_kelas():
+    kelas Lokal:
+        buat n adalah 5
+    kembalikan Lokal
+buat L adalah buat_kelas()
+tampilkan L().n

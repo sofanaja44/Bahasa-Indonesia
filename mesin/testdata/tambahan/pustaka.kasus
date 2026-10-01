@@ -1,0 +1,310 @@
+=== matematika_dasar
+impor matematika
+tampilkan matematika.pi, matematika.e, matematika.akar(16), matematika.akar(2), matematika.akar(10 ** 20)
+tampilkan matematika.pangkat(2, 10), matematika.pangkat(2.5, 2), matematika.pangkat(4, 0.5), matematika.mutlak(-3)
+tampilkan matematika.bulatkan(2.5), matematika.bulatkan(3.5), matematika.bulatkan(-2.5), matematika.bulatkan(2.675, 2), matematika.bulatkan(2.45, 1)
+tampilkan matematika.bulatkan(1234.5678, -2), matematika.bulatkan(0.5), matematika.bulatkan(1.005, 2), matematika.bulatkan(7), matematika.bulatkan(7, 2)
+tampilkan matematika.bulatkan_bawah(2.7), matematika.bulatkan_atas(2.1), matematika.lantai(-2.5), matematika.langit(-2.5), matematika.lantai(5)
+tampilkan matematika.sinus(30), matematika.kosinus(60), matematika.tangen(45), matematika.sinus(90), matematika.kosinus(90), matematika.sinus(180)
+tampilkan matematika.sinus(-30), matematika.kosinus(0), matematika.tangen(135), matematika.sinus(1000000), matematika.kosinus(33.3)
+tampilkan matematika.logaritma(100), matematika.logaritma(8, 2), matematika.logaritma(2 ** 2000, 2), matematika.ln(matematika.e), matematika.ln(10)
+tampilkan matematika.logaritma(1000), matematika.logaritma(0.001), matematika.logaritma(10 ** 400), matematika.ln(2 ** 2000), matematika.logaritma(9, 3)
+tampilkan matematika.faktorial(0), matematika.faktorial(20), matematika.faktorial(25)
+tampilkan matematika.fpb(12, 18), matematika.fpb(12, 18, 8), matematika.kpk(4, 6), matematika.kpk(4, 6, 10), matematika.fpb(0, 0), matematika.kpk(0, 5), matematika.fpb(-12, 18), matematika.kpk(-4, 6)
+=== matematika_akar_negatif
+impor matematika
+matematika.akar(-1)
+=== matematika_akar_besar
+impor matematika
+matematika.akar(10 ** 400)
+=== matematika_pangkat_kompleks
+impor matematika
+matematika.pangkat(-8, 0.5)
+=== matematika_pangkat_nol
+impor matematika
+matematika.pangkat(0, -1)
+=== matematika_pangkat_meluap
+impor matematika
+matematika.pangkat(10.0, 400)
+=== matematika_pangkat_logika
+impor matematika
+matematika.pangkat(benar, 2)
+=== matematika_tangen_90
+impor matematika
+matematika.tangen(90)
+=== matematika_tangen_270
+impor matematika
+matematika.tangen(-90)
+=== matematika_log_nol
+impor matematika
+matematika.logaritma(0)
+=== matematika_log_basis
+impor matematika
+matematika.logaritma(10, 1)
+=== matematika_log_basis_negatif
+impor matematika
+matematika.logaritma(10, -2)
+=== matematika_ln_negatif
+impor matematika
+matematika.ln(-1)
+=== matematika_faktorial_negatif
+impor matematika
+matematika.faktorial(-1)
+=== matematika_faktorial_desimal
+impor matematika
+matematika.faktorial(2.5)
+=== matematika_fpb_satu
+impor matematika
+matematika.fpb(5)
+=== matematika_kpk_desimal
+impor matematika
+matematika.kpk(5, 2.0)
+=== matematika_bulatkan_besar
+impor matematika
+matematika.bulatkan(10.0 ** 300)
+=== matematika_bulatkan_besar_bulat
+impor matematika
+tampilkan matematika.bulatkan(10 ** 27), matematika.bulatkan(10 ** 25, 2)
+tampilkan matematika.bulatkan(10 ** 28)
+=== matematika_bulatkan_digit_desimal
+impor matematika
+matematika.bulatkan(2.5, 1.5)
+=== matematika_bulatkan_negatif_nol
+impor matematika
+tampilkan matematika.bulatkan(-0.4), matematika.bulatkan(-0.04, 1), matematika.bulatkan(0.000001234, 8), matematika.bulatkan(123456789.987654321, 3)
+tampilkan matematika.bulatkan(15, -1), matematika.bulatkan(25, -1), matematika.bulatkan(-15, -1), matematika.bulatkan(1234, -50), matematika.bulatkan(0, 1000)
+tampilkan matematika.bulatkan(10.0 ** 22), matematika.bulatkan(1.5 / 10 ** 10, 12), matematika.bulatkan(99.995, 2), matematika.bulatkan(-99.995, 2)
+=== matematika_bulatkan_digit_banyak
+impor matematika
+tampilkan matematika.bulatkan(1.5, 30)
+=== matematika_tidak_ada
+impor matematika
+matematika.akr(4)
+=== matematika_teks
+impor matematika
+matematika.akar("4")
+=== matematika_lantai_teks
+impor matematika
+matematika.langit("4")
+=== matematika_sinus_teks
+impor matematika
+matematika.sinus("30")
+=== matematika_argumen_salah
+impor matematika
+matematika.akar(1, 2)
+=== matematika_alias
+impor matematika sebagai m
+tampilkan m.akar(9)
+dari matematika impor faktorial sebagai fak
+tampilkan fak(5)
+impor matematika.pi sebagai PI
+tampilkan PI
+impor matematika.akar
+tampilkan akar(81)
+dari matematika impor pi
+tampilkan pi
+=== impor_titik_bukan_modul
+impor matematika.pi.x
+=== impor_tidak_ada
+impor matematik
+=== impor_tidak_ada_jauh
+impor grafik
+=== dari_impor_tidak_ada
+dari matematika impor akr
+=== modul_atribut_tidak_ada
+impor acak
+acak.bilang(1, 2)
+=== modul_dalam_fungsi
+fungsi f():
+    impor matematika
+    kembalikan matematika.akar(4)
+tampilkan f()
+tampilkan matematika
+=== acak_benih
+impor acak
+acak.atur_benih(42)
+buat d adalah []
+ulangi 10 kali:
+    tambahkan acak.bilangan(1, 100) ke d
+tampilkan d
+tampilkan acak.angka(), acak.angka()
+buat w adalah ["a", "b", "c", "d", "e"]
+tampilkan acak.pilih(w), acak.pilih("xyz")
+acak.kocok(w)
+tampilkan w
+tampilkan acak.bilangan(-10 ** 30, 10 ** 30), acak.bilangan(5, 5), acak.bilangan(0, 2 ** 40), acak.bilangan(0, 2 ** 64)
+=== acak_benih_teks
+impor acak
+acak.atur_benih("halo")
+tampilkan acak.bilangan(1, 1000), acak.angka()
+acak.atur_benih(3.7)
+tampilkan acak.bilangan(1, 1000)
+acak.atur_benih(-5)
+tampilkan acak.bilangan(1, 1000)
+acak.atur_benih(2 ** 100)
+tampilkan acak.bilangan(1, 1000)
+acak.atur_benih(benar)
+tampilkan acak.bilangan(1, 1000)
+acak.atur_benih(0)
+tampilkan acak.bilangan(1, 1000)
+acak.atur_benih(10.0 ** 300)
+tampilkan acak.bilangan(1, 1000)
+acak.atur_benih(-2.5)
+tampilkan acak.bilangan(1, 1000)
+acak.atur_benih(5.0)
+tampilkan acak.bilangan(1, 1000)
+acak.atur_benih("é ü 🙂")
+tampilkan acak.bilangan(1, 1000)
+acak.atur_benih(2 ** 64 + 7)
+tampilkan acak.bilangan(1, 1000)
+=== acak_kalimat
+impor acak
+acak.atur_benih(7)
+tampilkan angka acak dari 1 sampai 6, angka acak dari 1 sampai 6, angka acak dari -5 sampai 5
+=== acak_tanpa_impor_benih
+tampilkan angka acak dari 1 sampai 1000
+=== acak_batas_terbalik
+tampilkan angka acak dari 10 sampai 1
+=== acak_batas_desimal
+tampilkan angka acak dari 1.5 sampai 3
+=== acak_batas_logika
+tampilkan angka acak dari benar sampai 3
+=== acak_pilih_kosong
+impor acak
+acak.pilih([])
+=== acak_pilih_angka
+impor acak
+acak.pilih(5)
+=== acak_kocok_teks
+impor acak
+acak.kocok("abc")
+=== acak_benih_daftar
+impor acak
+acak.atur_benih([1])
+=== acak_angka_argumen
+impor acak
+acak.angka(5)
+=== acak_kocok_panjang
+impor acak
+acak.atur_benih(99)
+buat d adalah rentang(30)
+acak.kocok(d)
+tampilkan d
+ulangi 5 kali:
+    cetak acak.pilih(d)
+    cetak " "
+tampilkan
+=== waktu_palsu
+impor waktu
+tampilkan jam sekarang, menit sekarang, detik sekarang, waktu sekarang
+tampilkan hari ini, tanggal hari ini, bulan ini, tahun ini
+tampilkan waktu.jam(), waktu.menit(), waktu.detik(), waktu.sekarang(), waktu.hari(), waktu.tanggal_lengkap(), waktu.nama_bulan(), waktu.tahun()
+tunggu 1 detik
+tunggu 5 milidetik
+tunggu 2 menit
+tunggu 1 jam
+tunggu 0.5
+waktu.tunggu(0.1)
+tunggu(0)
+tampilkan "selesai"
+=== waktu_repl
+waktu sekarang
+=== tunggu_negatif
+tunggu -1 detik
+=== tunggu_teks
+tunggu "lama"
+=== tunggu_logika
+tunggu benar
+=== tunggu_fungsi_negatif
+tunggu(-1)
+=== tunggu_fungsi_teks
+tunggu("x")
+=== berkas_lengkap
+impor berkas
+berkas.tulis("a.txt", "baris1\nbaris2")
+berkas.tambahkan("a.txt", "\nbaris3")
+tampilkan berkas.baca("a.txt")
+tampilkan berkas.baca_baris("a.txt")
+tampilkan berkas.ada("a.txt"), berkas.ada("b.txt"), berkas.ada(5)
+berkas.tulis("b.txt", [1, 2])
+tampilkan berkas.baca("b.txt")
+berkas.hapus("a.txt")
+tampilkan berkas.ada("a.txt")
+berkas.tulis("c.txt", "")
+tampilkan berkas.baca_baris("c.txt"), berkas.baca("c.txt") == ""
+berkas.tulis("d.txt", "x\r\ny\rz\n\n")
+tampilkan berkas.baca_baris("d.txt")
+=== berkas_tidak_ada
+impor berkas
+berkas.baca("tidak_ada.txt")
+=== berkas_hapus_tidak_ada
+impor berkas
+berkas.hapus("tidak_ada.txt")
+=== berkas_nama_angka
+impor berkas
+berkas.baca(5)
+=== berkas_tulis_nama_angka
+impor berkas
+berkas.tulis(5, "x")
+=== berkas_folder
+impor berkas
+berkas.baca(".")
+=== berkas_tulis_folder
+impor berkas
+berkas.tulis(".", "x")
+=== berkas_hapus_folder
+impor berkas
+berkas.hapus(".")
+=== berkas_nama_kosong
+impor berkas
+berkas.baca("")
+=== masukan_fungsi
+#masukan: Budi|12|3,5|x|
+buat nama adalah masukan("Nama? ")
+buat umur adalah masukan_angka("Umur? ")
+buat tinggi adalah masukan_desimal("Tinggi? ")
+tampilkan nama, umur, tinggi
+buat jawab adalah masukan()
+tampilkan jawab
+tampilkan masukan_angka()
+=== masukan_angka_salah
+#masukan: abc
+masukan_angka("? ")
+=== masukan_desimal_salah
+#masukan: abc
+masukan_desimal("? ")
+=== masukan_habis
+#masukan:
+buat x adalah masukan("? ")
+=== masukan_habis_kedua
+#masukan: satu
+buat x adalah masukan("? ")
+buat y adalah masukan("lagi? ")
+=== tanya_angka_ulang
+#masukan: dua|dua puluh|2,5
+buat n adalah tanya angka "Berapa? "
+tampilkan n, jenis(n)
+=== tanya_angka_bulat
+#masukan: 7.0
+buat n adalah tanya angka "Berapa? "
+tampilkan n, jenis(n)
+=== tanya_angka_habis
+#masukan: x|y
+buat n adalah tanya angka "Berapa? "
+=== tanya_teks
+#masukan: Ani
+buat n adalah tanya "Nama? "
+tampilkan "Halo", n
+tampilkan tanya("lagi? ")
+=== tanya_repl
+#masukan: jawaban
+tanya "Apa? "
+=== masukan_angka_desimal_bulat
+#masukan: 7.0
+tampilkan masukan_angka("? ")
+=== masukan_prompt_falsy
+#masukan: a|b|c
+tampilkan masukan(0), masukan(kosong), masukan([1])
+=== masukan_angka_besar
+#masukan: 123456789012345678901234567890
+tampilkan masukan_angka(), jenis(123)

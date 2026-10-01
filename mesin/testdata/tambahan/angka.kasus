@@ -1,0 +1,121 @@
+=== bagi
+tampilkan 7 / 2, 6 / 3, -7 / 2, 1 / 3, 2 / 3, 10 / 4
+=== sisa
+tampilkan 7 % 3, -7 % 3, 7 % -3, -7 % -3, 7.5 % 2, -7.5 % 2, 7 % 2.5, 5.0 % -3, -0.0 % 5
+=== pangkat
+tampilkan 2 ** 10, 2 ** -1, (-2) ** 3, 2 ** 0.5, 10 ** 20, 2 ** 100, (-8) ** 3, 0 ** 0, 0.0 ** 0
+tampilkan 1.1 ** 3, 1.5 ** 2.5, 2 ** -3, 10 ** -2, (-2) ** -3, 3 ** 40
+=== pangkat_kompleks
+tampilkan (-8) ** 0.5
+=== pangkat_nol_negatif
+tampilkan 0 ** -1
+=== pangkat_meluap
+tampilkan 10.0 ** 400
+=== bulat_besar
+buat x adalah 2 ** 200
+tampilkan x
+tampilkan x + 1, x - x, x % 7, -x
+tampilkan x * x
+tampilkan x / 2 ** 190, x / 3
+tampilkan x > 10.0 ** 60, x < 10.0 ** 61, x == 2.0 ** 200
+x
+=== desimal_tampil
+tampilkan 0.1 + 0.2, 1.0, 10.0 ** 20, 10.0 ** 21, 1.5 / 10 ** 7, 123456789.123456789
+tampilkan 1 / 7, 100.0 / 3, 2.5 / 100000, 10.0 ** 16, 10.0 ** 17, 12345678901234567890.0
+tampilkan 0.000001, 0.0000001, 0.00001, 123456.7890123, 99999999999.99, 0.1 * 3, 1.15 * 100
+=== desimal_repl
+0.1 + 0.2
+=== desimal_repl_kecil
+1 / 3
+=== desimal_repl_besar
+2.0 ** 70
+=== desimal_meluap
+tampilkan 10.0 ** 308 * 10, -(10.0 ** 308) * 10
+=== nan
+buat tak_hingga adalah 10.0 ** 308 * 10
+tampilkan tak_hingga - tak_hingga, tak_hingga > 10.0 ** 308, tak_hingga == tak_hingga, -tak_hingga
+buat n adalah tak_hingga - tak_hingga
+tampilkan n == n, n > 1, n < 1, n bukan n
+=== bagi_nol_desimal
+tampilkan 1.0 / 0
+=== bagi_nol_desimal2
+tampilkan 1 / 0.0
+=== sisa_nol
+tampilkan 5 % 0
+=== sisa_nol_desimal
+tampilkan 5.5 % 0.0
+=== perbandingan_campur
+tampilkan 1 == 1.0, benar == 1, salah == 0, 2 ** 53 + 1 == 2.0 ** 53, 0.1 + 0.2 == 0.3
+tampilkan 2 ** 64 > 18000000000000000000.0, 2 ** 64 < 19000000000000000000.0, -(2 ** 64) < -18000000000000000000.0, 2 ** 1100 > 10.0 ** 308
+=== negasi
+tampilkan -5, -(-5), -(2 ** 63), -0.0, -(2 ** 63) - 1
+=== negasi_teks
+tampilkan -"a"
+=== negasi_logika
+tampilkan -benar
+=== logika_angka
+tampilkan benar + benar, benar * 10, salah - 1, benar / 2, benar ** 2
+=== teks_kali
+tampilkan "ab" * 3, 3 * "ab", "ab" * 0, "ab" * -2, "x" * benar
+=== teks_kali_desimal
+tampilkan "ab" * 2.5
+=== teks_tambah_angka
+tampilkan "a" + 1, 1 + "a", "a" + 1.5, "nilai: " + benar, "x" + kosong, "d" + [1, 2]
+=== tipe_tidak_cocok
+tampilkan 1 - "a"
+=== tipe_tidak_cocok2
+tampilkan [1] - 1
+=== tipe_tidak_cocok3
+tampilkan [1] + [2]
+=== tipe_tidak_cocok_banding
+tampilkan 1 < "a"
+=== tipe_banding_daftar
+tampilkan [1] < [2]
+=== tipe_banding_kosong
+tampilkan kosong < 1
+=== banding_teks
+tampilkan "a" < "b", "B" < "a", "apel" < "apelx", "" < "a", "é" > "z"
+=== kurung_dalam
+tampilkan ((((((((((1 + 2))))))))))
+=== bilangan_garis_bawah
+tampilkan 1_000_000 + 1
+=== bagi_bulat_besar
+tampilkan (10 ** 30) / (10 ** 10), (10 ** 400) / (10 ** 399), 2 ** 64 / 3, (2 ** 53 + 1) / 1
+=== bagi_bulat_besar_meluap
+tampilkan (10 ** 400) / 3
+=== campur_besar_desimal
+tampilkan 10 ** 400 + 1.0
+=== tambah_meluap_int64
+tampilkan 9223372036854775807 + 1, -9223372036854775808 - 1, 9223372036854775807 * 2
+=== kali_int64
+tampilkan 3037000500 * 3037000500, -3037000500 * 3037000500, 4294967296 * 4294967296
+=== sisa_int64
+tampilkan -9223372036854775808 % -1, -9223372036854775808 % 7, 2 ** 70 % -3, -(2 ** 70) % 3
+=== desimal_bulat_tampil
+tampilkan 3.0, -2.0, 10.0 ** 15, 2.5 * 2, 10.0 ** 18, 10.0 ** 19, -(10.0 ** 19), 123456789012.0
+=== penugasan_gabungan
+buat x adalah 10
+x += 5
+x -= 3
+x *= 2
+x /= 4
+tampilkan x
+x %= 4
+tampilkan x
+buat t adalah "a"
+t += "b"
+t *= 3
+tampilkan t
+=== kalimat_aritmetika
+buat skor adalah 10
+tambahkan 5 ke skor
+kurangi skor dengan 3
+kurangi 2 dari skor
+kalikan skor dengan 4
+bagi skor dengan 8
+tampilkan skor
+=== habis_dibagi
+tampilkan 10 habis dibagi 5, 10 tidak habis dibagi 3, 9 habis dibagi 3
+=== perbandingan_kalimat
+tampilkan 5 lebih dari 3, 5 kurang dari 3, 5 paling sedikit 5, 5 paling banyak 4, 3 sama dengan 3, 3 tidak sama dengan 3
+tampilkan 5 lebih besar dari 3, 2 lebih kecil dari 3, 5 tidak kurang dari 5, 5 tidak lebih dari 5
