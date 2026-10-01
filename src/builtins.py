@@ -9,7 +9,7 @@ import math
 import time
 from datetime import datetime
 
-from src.bk_types import BKDaftar, BKKamus, BKFungsi, BKKelas, BKInstansi, BKModul
+from src.bk_types import BKDaftar, BKKamus, BKFungsi, BKKelas, BKInstansi, BKModul, BKMetodeTerikat
 from src.errors import KesalahanNilai, KesalahanTipe
 
 NAMA_HARI = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
@@ -73,6 +73,8 @@ def _ke_teks(nilai) -> str:
         return "{" + pairs + "}"
     if isinstance(nilai, str):
         return nilai
+    if callable(nilai):
+        return "<fungsi bawaan>"
     return str(nilai)
 
 
@@ -249,7 +251,7 @@ def _jenis(x) -> str:
         return "modul"
     if isinstance(x, BKInstansi):
         return "objek"
-    if isinstance(x, BKFungsi) or callable(x):
+    if isinstance(x, (BKFungsi, BKMetodeTerikat)) or callable(x):
         return "fungsi"
     return "objek"
 

@@ -20,6 +20,9 @@ from src.errors import (
     KesalahanIndeks, KesalahanNama, KesalahanNilai, KesalahanKunci, KesalahanTumpukan, nama_tangkap,
 )
 
+# Bilangan bulat yang sangat panjang tetap boleh ditampilkan (Python membatasinya 4.300 digit).
+sys.set_int_max_str_digits(0)
+
 # Paling banyak sekian panggilan fungsi bertumpuk; lebih dari itu dianggap rekursi tak berujung.
 BATAS_REKURSI = 3000
 # Satu panggilan fungsi di bahasa ini memakai beberapa frame Python sekaligus.
@@ -305,6 +308,8 @@ class Interpreter:
                     raise KesalahanBagiNol("Tidak bisa membagi dengan nol", baris=node.baris, kolom=node.kolom)
                 return kiri / kanan
             if op == "%":
+                if isinstance(kiri, str):
+                    raise TypeError  # bukan pemformatan teks ala Python
                 if kanan == 0:
                     raise KesalahanBagiNol("Tidak bisa membagi dengan nol", baris=node.baris, kolom=node.kolom)
                 return kiri % kanan
@@ -365,7 +370,7 @@ class Interpreter:
         try:
             if tipe == "bilangan": return int(nilai) if not isinstance(nilai, bool) else int(nilai)
             if tipe == "desimal": return float(nilai)
-            if tipe == "teks": return str(nilai)
+            if tipe == "teks": return _ke_teks(nilai)  # "benar", bukan "True"
             if tipe == "logika": return bool(nilai)
         except (ValueError, TypeError):
             raise KesalahanTipe(f"Tidak bisa mengubah nilai ke tipe '{tipe}'", baris=baris, kolom=kolom)
@@ -490,7 +495,12 @@ class Interpreter:
                 f"'untuk setiap' hanya bisa menelusuri daftar, kamus, atau teks, bukan '{_ke_teks(iterable)}'",
                 baris=node.baris, kolom=node.kolom,
             )
-        items = iterable.elemen if isinstance(iterable, BKDaftar) else iterable
+        if isinstance(iterable, BKDaftar):
+            items = iterable.elemen
+        elif isinstance(iterable, BKKamus):
+            items = list(iterable.data)  # kamus boleh diubah selama ditelusuri
+        else:
+            items = iterable
         for item in items:
             loop_env = env.anak("untuk_setiap")
             loop_env.definisikan(node.variabel, item)

@@ -42,6 +42,13 @@ def _akar(x):
     return math.sqrt(x)
 
 
+def _pangkat(x, n):
+    hasil = _pastikan_angka(x, "pangkat") ** _pastikan_angka(n, "pangkat")
+    if isinstance(hasil, complex):
+        raise KesalahanNilai("Pangkat pecahan dari bilangan negatif tidak bisa dihitung")
+    return hasil
+
+
 def _bulatkan(x, digit=0):
     """Pembulatan seperti di sekolah: 2.5 → 3, 2.45 (1 digit) → 2.5."""
     _pastikan_angka(x, "bulatkan")
@@ -110,7 +117,7 @@ def _modul_matematika() -> BKModul:
         "pi": math.pi,
         "e": math.e,
         "akar": _akar,
-        "pangkat": lambda x, n: _pastikan_angka(x, "pangkat") ** _pastikan_angka(n, "pangkat"),
+        "pangkat": _pangkat,
         "mutlak": lambda x: abs(_pastikan_angka(x, "mutlak")),
         "bulatkan": _bulatkan,
         "bulatkan_bawah": bawah,

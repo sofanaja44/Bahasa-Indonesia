@@ -1146,6 +1146,35 @@ class TestKesalahanRapi:
             panjang, tb = panjang + 1, tb.tb_next
         assert panjang < 100
 
+    def test_konversi_teks_berbahasa_indonesia(self):
+        assert tangkap_output("teks a = benar\nteks b = kosong\nteks c = 2.0\ntampilkan a, b, c") == "benar kosong 2"
+
+    def test_kamus_kosong_bernilai_salah(self):
+        assert tangkap_output("buat k = {}\njika k: tampilkan 1\njika tidak: tampilkan 2") == "2"
+        assert tangkap_output("tampilkan ubah_logika({}), ubah_logika({1: 2})") == "salah benar"
+
+    def test_jenis_metode_adalah_fungsi(self):
+        kode = "kelas A:\n    fungsi f(diri):\n        kembalikan 1\ntampilkan jenis(A().f), jenis([].tambahkan)"
+        assert tangkap_output(kode) == "fungsi fungsi"
+
+    def test_fungsi_bawaan_ditampilkan_rapi(self):
+        assert tangkap_output("tampilkan panjang") == "<fungsi bawaan>"
+
+    def test_kamus_boleh_diubah_saat_ditelusuri(self):
+        kode = "buat k = {1: 1, 2: 2}\nuntuk setiap x dalam k:\n    k[x ditambah 10] = 0\ntampilkan panjang(k)"
+        assert tangkap_output(kode) == "4"
+
+    def test_teks_tidak_bisa_dipakai_dengan_sisa_bagi(self):
+        with pytest.raises(KesalahanTipe):
+            jalankan_kode('tampilkan "nilai %d" % 5')
+
+    def test_bilangan_sangat_panjang_tetap_tampil(self):
+        assert len(tangkap_output("tampilkan 10 pangkat 5000")) == 5001
+
+    def test_pangkat_pecahan_bilangan_negatif(self):
+        with pytest.raises(KesalahanNilai, match="Pangkat pecahan"):
+            jalankan_kode("impor matematika\ntampilkan matematika.pangkat(-8, 0.5)")
+
     def test_parameter_diri_pada_fungsi_biasa(self):
         assert tangkap_output("fungsi f(diri):\n    kembalikan diri\ntampilkan f(3)") == "3"
 

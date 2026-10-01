@@ -355,12 +355,21 @@ class TestPerulangan:
         assert node.variabel == "buah"
 
     def test_berhenti(self):
-        tree = ast("berhenti")
-        assert isinstance(tree.pernyataan[0], NodeBerhenti)
+        tree = ast("selama benar: berhenti")
+        assert isinstance(tree.pernyataan[0].blok[0], NodeBerhenti)
 
     def test_lewati(self):
-        tree = ast("lewati")
-        assert isinstance(tree.pernyataan[0], NodeLewati)
+        tree = ast("untuk i dari 1 sampai 3: lewati")
+        assert isinstance(tree.pernyataan[0].blok[0], NodeLewati)
+
+    @pytest.mark.parametrize("kode", [
+        "berhenti",
+        "jika benar: lewati",
+        "selama benar:\n    fungsi f():\n        berhenti",
+    ])
+    def test_berhenti_di_luar_perulangan(self, kode):
+        with pytest.raises(KesalahanSintaks, match="hanya bisa dipakai di dalam perulangan"):
+            ast(kode)
 
 
 # ============================================================
@@ -388,10 +397,14 @@ class TestFungsi:
         assert node.parameter[1][1] is not None  # default value exists
 
     def test_kembalikan(self):
-        tree = ast("kembalikan 42")
-        node = tree.pernyataan[0]
+        tree = ast("fungsi f(): kembalikan 42")
+        node = tree.pernyataan[0].blok[0]
         assert isinstance(node, NodeKembalikan)
         assert node.ekspresi.nilai == 42
+
+    def test_kembalikan_di_luar_fungsi(self):
+        with pytest.raises(KesalahanSintaks, match="hanya bisa dipakai di dalam fungsi"):
+            ast("kembalikan 42")
 
     def test_panggil_fungsi(self):
         tree = ast("sapa(nama)")

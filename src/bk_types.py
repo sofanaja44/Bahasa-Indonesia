@@ -144,6 +144,9 @@ class BKKamus:
     def __repr__(self):
         return str(self.data)
 
+    def __len__(self):
+        return len(self.data)  # kamus kosong bernilai salah, seperti daftar kosong
+
     def __contains__(self, key):
         return key in self.data
 

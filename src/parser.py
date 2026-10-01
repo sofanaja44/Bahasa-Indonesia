@@ -77,6 +77,8 @@ class Parser:
         self.pos = 0
         self.kode_sumber = kode_sumber
         self.daftar_baris = kode_sumber.split("\n") if kode_sumber else []
+        self._dalam_perulangan = 0  # berhenti/lewati hanya boleh di dalam perulangan
+        self._dalam_fungsi = 0      # kembalikan hanya boleh di dalam fungsi
 
     # ============================
     # Helpers
@@ -256,11 +258,12 @@ class Parser:
             return self.parse_fungsi()
         if t == TokenType.KEMBALIKAN:
             return self.parse_kembalikan()
-        if t == TokenType.BERHENTI:
+        if t in (TokenType.BERHENTI, TokenType.LEWATI):
             tok = self.maju()
-            return NodeBerhenti(baris=tok.baris, kolom=tok.kolom)
-        if t == TokenType.LEWATI:
-            tok = self.maju()
+            if not self._dalam_perulangan:
+                self._error(f"'{tok.nilai}' hanya bisa dipakai di dalam perulangan (selama, untuk, ulangi).", tok)
+            if t == TokenType.BERHENTI:
+                return NodeBerhenti(baris=tok.baris, kolom=tok.kolom)
             return NodeLewati(baris=tok.baris, kolom=tok.kolom)
         if t == TokenType.KELAS:
             return self.parse_kelas()
@@ -590,10 +593,17 @@ class Parser:
     # Perulangan
     # ============================
 
+    def _parse_blok_perulangan(self) -> list:
+        self._dalam_perulangan += 1
+        try:
+            return self.parse_blok()
+        finally:
+            self._dalam_perulangan -= 1
+
     def parse_selama(self):
         tok = self.maju()  # SELAMA
         kondisi = self.parse_ekspresi()
-        blok = self.parse_blok()
+        blok = self._parse_blok_perulangan()
         return NodeSelama(kondisi, blok, baris=tok.baris, kolom=tok.kolom)
 
     def parse_untuk(self):
@@ -606,7 +616,7 @@ class Parser:
         langkah = None
         if self.cocok(TokenType.LANGKAH):
             langkah = self.parse_ekspresi()
-        blok = self.parse_blok()
+        blok = self._parse_blok_perulangan()
         return NodeUntuk(nama, dari_expr, sampai_expr, langkah, blok, baris=tok.baris, kolom=tok.kolom)
 
     def parse_untuk_setiap(self):
@@ -614,7 +624,7 @@ class Parser:
         nama = self.harapkan(TokenType.IDENTIFIER).nilai
         self.harapkan(TokenType.DALAM)
         iterable = self.parse_ekspresi()
-        blok = self.parse_blok()
+        blok = self._parse_blok_perulangan()
         return NodeUntukSetiap(nama, iterable, blok, baris=tok.baris, kolom=tok.kolom)
 
     def parse_ulangi(self):
@@ -625,12 +635,12 @@ class Parser:
             if not self.periksa_kata("kali"):
                 self._error("Setelah 'ulangi <jumlah>' diharapkan kata 'kali'. Contoh: ulangi 3 kali: ...")
             self.maju()  # kali
-            blok = self.parse_blok()
+            blok = self._parse_blok_perulangan()
             return NodeUlangiKali(jumlah, blok, baris=tok.baris, kolom=tok.kolom)
 
         # ulangi: ... selama <kondisi>   (ulangi selama kondisi benar)
         # ulangi: ... sampai <kondisi>   (ulangi sampai kondisi menjadi benar)
-        blok = self.parse_blok()
+        blok = self._parse_blok_perulangan()
         self.lewati_baris_baru()
         if self.cocok(TokenType.SELAMA):
             kondisi = self.parse_ekspresi()
@@ -652,7 +662,14 @@ class Parser:
         self.harapkan(TokenType.KURUNG_BUKA)
         params = self._parse_parameter()
         self.harapkan(TokenType.KURUNG_TUTUP)
-        blok = self.parse_blok()
+        # berhenti/lewati di dalam fungsi tidak bisa menghentikan perulangan di luar fungsi
+        simpan_perulangan, self._dalam_perulangan = self._dalam_perulangan, 0
+        self._dalam_fungsi += 1
+        try:
+            blok = self.parse_blok()
+        finally:
+            self._dalam_fungsi -= 1
+            self._dalam_perulangan = simpan_perulangan
         return NodeFungsi(nama, params, blok, baris=tok.baris, kolom=tok.kolom)
 
     def _parse_parameter(self) -> list:
@@ -682,6 +699,8 @@ class Parser:
 
     def parse_kembalikan(self):
         tok = self.maju()  # KEMBALIKAN
+        if not self._dalam_fungsi:
+            self._error("'kembalikan' hanya bisa dipakai di dalam fungsi.", tok)
         ekspresi = None
         if not self.periksa(TokenType.BARIS_BARU, TokenType.DEDENT, TokenType.EOF):
             ekspresi = self.parse_ekspresi()
