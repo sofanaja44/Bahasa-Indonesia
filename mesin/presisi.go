@@ -12,11 +12,15 @@ import (
 // perhitungan bisa berbeda dari Python di digit terakhir.
 
 // ---- Aritmetika double-double (±106 bit) untuk jalur cepat ----
+//
+// Penting: di ARM64, kompilator Go boleh menggabungkan x*y + z menjadi satu instruksi FMA, juga
+// melintasi pernyataan. Itu merusak trik "jumlah tanpa galat" di bawah, yang mengandalkan setiap
+// hasil kali dibulatkan lebih dulu. Konversi float64(...) yang eksplisit mencegah penggabungan itu.
 
 type dd struct{ hi, lo float64 }
 
 func ddKali(x, y dd) dd {
-	p := x.hi * y.hi
+	p := float64(x.hi * y.hi)
 	e := math.FMA(x.hi, y.hi, -p) // galat perkalian, tepat
 	e += x.hi*y.lo + x.lo*y.hi
 	s := p + e
@@ -54,7 +58,7 @@ func pangkatBulatCepat(x float64, n uint64, negatif bool) (float64, bool) {
 	if negatif {
 		q1 := 1 / h.hi
 		r := math.FMA(-q1, h.hi, 1) - q1*h.lo
-		q2 := r * q1
+		q2 := float64(r * q1)
 		s := q1 + q2
 		var eq int64
 		h = ddNormal(dd{s, q2 - (s - q1)}, &eq) // 1/(h·2^t) = (1/h)·2^-t
