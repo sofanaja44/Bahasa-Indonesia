@@ -11,13 +11,13 @@ from src.ast_nodes import *
 from src.environment import Lingkungan, saran_nama
 from src.bk_types import (
     BKDaftar, BKKamus, BKFungsi, BKKelas, BKInstansi, BKMetodeTerikat, BKInduk, BKModul,
-    SinyalKembalikan, SinyalBerhenti, SinyalLewati, semua_metode_teks,
+    SinyalKembalikan, SinyalBerhenti, SinyalLewati, semua_metode_teks, TeksKesalahan,
 )
 from src.builtins import daftar_fungsi_bawaan, _ke_teks, _jenis, baca_waktu, tanya, tunggu
 from src.pustaka import MODUL, bilangan_acak, muat_modul
 from src.errors import (
     KesalahanIndonesia, KesalahanTipe, KesalahanBagiNol,
-    KesalahanIndeks, KesalahanNama, KesalahanNilai, KesalahanKunci, KesalahanTumpukan,
+    KesalahanIndeks, KesalahanNama, KesalahanNilai, KesalahanKunci, KesalahanTumpukan, nama_tangkap,
 )
 
 # Paling banyak sekian panggilan fungsi bertumpuk; lebih dari itu dianggap rekursi tak berujung.
@@ -622,6 +622,12 @@ class Interpreter:
             self._jalankan_blok(fungsi.blok, func_env)
         except SinyalKembalikan as ret:
             return ret.nilai
+        except (KesalahanIndonesia, RecursionError, KeyboardInterrupt) as e:
+            # Traceback Python kesalahan ini tidak pernah ditampilkan. Tanpa dipotong di setiap
+            # tingkat, rekursi yang gagal membawa traceback puluhan ribu frame; membebaskannya
+            # sekaligus menghabiskan tumpukan WebAssembly di editor browser (Pyodide).
+            e.__traceback__ = None
+            raise
         finally:
             self.kedalaman -= 1
         return None
@@ -744,6 +750,9 @@ class Interpreter:
         if isinstance(obj, BKModul):
             return self._isi_modul(obj, nama, node)
 
+        if isinstance(obj, TeksKesalahan) and nama in ("pesan", "jenis"):
+            return getattr(obj, nama)
+
         if isinstance(obj, (BKDaftar, BKKamus, str)):
             semua = semua_metode_teks(obj) if isinstance(obj, str) else obj.semua_metode()
             if nama in semua:
@@ -774,13 +783,11 @@ class Interpreter:
             raise  # kembalikan/berhenti/lewati di dalam 'coba' bukan kesalahan
         except Exception as e:
             for tipe_error, variabel, blok in node.penangkap:
-                # Match error type if specified
-                if tipe_error and not type(e).__name__.endswith(tipe_error) and tipe_error != type(e).__name__:
+                if tipe_error and tipe_error.lower() not in nama_tangkap(type(e)):
                     continue
                 catch_env = env.anak("tangkap")
                 if variabel:
-                    err_msg = e.pesan if hasattr(e, 'pesan') else str(e)
-                    catch_env.definisikan(variabel, err_msg)
+                    catch_env.definisikan(variabel, TeksKesalahan(e))
                 return self._jalankan_blok(blok, catch_env)
             raise
         finally:

@@ -425,6 +425,52 @@ class TestErrorHandling:
         )
         assert tangkap_output(kode) == "Tertangkap"
 
+    def test_tangkap_kesalahan_menangkap_semua(self):
+        kode = 'coba:\n    tampilkan tidak_ada\ntangkap Kesalahan:\n    tampilkan "tertangkap"'
+        assert tangkap_output(kode) == "tertangkap"
+
+    def test_tangkap_kesalahan_huruf_kecil_menyimpan_pesan(self):
+        kode = 'coba:\n    buat x = 1 / 0\ntangkap kesalahan:\n    tampilkan "Ups:", kesalahan'
+        assert tangkap_output(kode) == "Ups: Tidak bisa membagi dengan nol"
+
+    def test_contoh_prd_nama_python(self):
+        kode = (
+            "coba:\n    buat hasil = 10 / 0\n"
+            "tangkap ZeroDivisionError sebagai e:\n    tampilkan \"Error: Tidak bisa dibagi nol!\"\n"
+            "tangkap sebagai e:\n    tampilkan \"Error tidak diketahui: \" + e.pesan\n"
+            "akhirnya:\n    tampilkan \"Selesai dieksekusi\""
+        )
+        assert tangkap_output(kode) == "Error: Tidak bisa dibagi nol!\nSelesai dieksekusi"
+
+    def test_pesan_dan_jenis_kesalahan(self):
+        kode = (
+            'coba:\n    lempar "Baterai habis"\n'
+            'tangkap sebagai e:\n    tampilkan e.pesan, "|", e.jenis, "|", e.huruf_besar()'
+        )
+        assert tangkap_output(kode) == "Baterai habis | KesalahanNilai | BATERAI HABIS"
+
+    def test_jenis_tidak_cocok_diteruskan(self):
+        kode = "coba:\n    buat x = 1 / 0\ntangkap KesalahanNama:\n    tampilkan 1"
+        with pytest.raises(KesalahanBagiNol):
+            jalankan_kode(kode)
+
+    def test_penangkap_pertama_yang_cocok_dipakai(self):
+        kode = (
+            "coba:\n    tampilkan [1][5]\n"
+            "tangkap KesalahanBagiNol:\n    tampilkan \"bagi\"\n"
+            "tangkap kesalahanindeks:\n    tampilkan \"indeks\"\n"
+            "tangkap:\n    tampilkan \"lain\""
+        )
+        assert tangkap_output(kode) == "indeks"
+
+    @pytest.mark.parametrize("kode, potongan", [
+        ("coba:\n    tampilkan 1\ntangkap e:\n    tampilkan e", "tulis: tangkap sebagai e"),
+        ("coba:\n    tampilkan 1\ntangkap KesalahanBagiNoll:\n    tampilkan 2", "Maksud Anda 'KesalahanBagiNol'?"),
+    ])
+    def test_jenis_kesalahan_tidak_dikenal(self, kode, potongan):
+        with pytest.raises(KesalahanSintaks, match=potongan):
+            jalankan_kode(kode)
+
 
 # ============================================================
 # Built-in Functions
@@ -1090,6 +1136,15 @@ class TestKesalahanRapi:
             "tampilkan g(2000)"  # kedalaman kembali normal setelah kesalahan
         )
         assert tangkap_output(kode) == "tertangkap\n0"
+
+    def test_traceback_rekursi_gagal_tetap_pendek(self):
+        # Traceback puluhan ribu frame membuat Pyodide (editor browser) kehabisan tumpukan saat dibebaskan.
+        with pytest.raises(KesalahanTumpukan) as info:
+            jalankan_kode("fungsi f(n):\n    kembalikan f(n + 1)\nf(0)")
+        tb, panjang = info.value.__traceback__, 0
+        while tb is not None:
+            panjang, tb = panjang + 1, tb.tb_next
+        assert panjang < 100
 
     def test_parameter_diri_pada_fungsi_biasa(self):
         assert tangkap_output("fungsi f(diri):\n    kembalikan diri\ntampilkan f(3)") == "3"

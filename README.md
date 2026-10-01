@@ -164,6 +164,29 @@ selama nyawa lebih dari 0, lakukan:
 
 Angka desimal yang bulat ditampilkan tanpa `.0` (`10 dibagi 2` tampil `5`), dan galat pembulatan kecil disembunyikan (`0.1 ditambah 0.2` tampil `0.3`).
 
+### Menangani kesalahan
+
+```id
+coba:
+    buat hasil adalah 10 dibagi 0
+tangkap KesalahanBagiNol:
+    tampilkan "Tidak bisa dibagi nol!"
+tangkap kesalahan:
+    tampilkan "Ups:", kesalahan
+akhirnya:
+    tampilkan "Selesai"
+```
+
+| Penulisan | Arti |
+|---|---|
+| `tangkap:` | tangkap kesalahan jenis apa pun |
+| `tangkap kesalahan:` | sama, dan pesannya bisa dipakai lewat variabel `kesalahan` |
+| `tangkap sebagai e:` | pesannya disimpan di `e`; `e.jenis` berisi jenisnya, mis. `KesalahanNama` |
+| `tangkap KesalahanBagiNol:` | hanya jenis tertentu; nama Python seperti `ZeroDivisionError` juga dikenali |
+| `lempar "Umur tidak boleh negatif"` | buat kesalahan sendiri (jenisnya `KesalahanNilai`) |
+
+Jenis kesalahan: `KesalahanSintaks`, `KesalahanNama`, `KesalahanTipe`, `KesalahanIndeks`, `KesalahanBagiNol`, `KesalahanKunci`, `KesalahanNilai`, `KesalahanBerkas`, `KesalahanTumpukan`.
+
 ---
 
 ## 📚 Pustaka Standar

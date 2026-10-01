@@ -18,7 +18,7 @@ from typing import List, Optional
 
 from src.token_types import TokenType, KATA_KUNCI, jelaskan_tipe
 from src.lexer import Token
-from src.errors import KesalahanSintaks
+from src.errors import KesalahanSintaks, NAMA_SEMUA_KESALAHAN, semua_nama_tangkap
 from src.ast_nodes import (
     NodeProgram, NodeAngka, NodeTeks, NodeTeksFormat, NodeLogika, NodeKosong,
     NodeIdentifier, NodeWaktuSekarang, NodeAngkaAcak, NodeTanya, NodeOperasiBiner, NodeOperasiUnari,
@@ -755,9 +755,15 @@ class Parser:
             tipe_error = None
             variabel = None
             if self.periksa(TokenType.IDENTIFIER):
-                tipe_error = self.maju().nilai
+                tok_jenis = self.maju()
+                tipe_error = tok_jenis.nilai
+                if tipe_error.lower() not in semua_nama_tangkap():
+                    self._error(self._pesan_jenis_kesalahan_asing(tipe_error), tok_jenis)
             if self.cocok(TokenType.SEBAGAI):
                 variabel = self.harapkan(TokenType.IDENTIFIER).nilai
+            elif tipe_error in NAMA_SEMUA_KESALAHAN:
+                # 'tangkap kesalahan:' — pesannya bisa dipakai lewat variabel 'kesalahan'
+                variabel = tipe_error
             blok = self.parse_blok()
             penangkap.append((tipe_error, variabel, blok))
             self.lewati_baris_baru()
@@ -765,6 +771,15 @@ class Parser:
         if self.cocok(TokenType.AKHIRNYA):
             blok_akhirnya = self.parse_blok()
         return NodeCoba(blok_coba, penangkap, blok_akhirnya, baris=tok.baris, kolom=tok.kolom)
+
+    @staticmethod
+    def _pesan_jenis_kesalahan_asing(nama: str) -> str:
+        dikenal = semua_nama_tangkap()
+        mirip = difflib.get_close_matches(nama.lower(), list(dikenal), n=1, cutoff=0.75)
+        if mirip:
+            return f"'{nama}' bukan jenis kesalahan yang dikenal. Maksud Anda '{dikenal[mirip[0]]}'?"
+        return (f"'{nama}' bukan jenis kesalahan yang dikenal. "
+                f"Untuk menyimpan pesan kesalahan ke variabel, tulis: tangkap sebagai {nama}")
 
     def parse_lempar(self):
         tok = self.maju()  # LEMPAR

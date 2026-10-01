@@ -6,7 +6,7 @@ from __future__ import annotations
 import string
 from typing import Any, Optional
 
-from src.errors import KesalahanIndeks, KesalahanKunci, KesalahanNilai, KesalahanTipe
+from src.errors import KesalahanIndeks, KesalahanKunci, KesalahanNilai, KesalahanTipe, nama_jenis
 
 
 def _teks(nilai) -> str:
@@ -30,6 +30,17 @@ class SinyalBerhenti(Exception):
 class SinyalLewati(Exception):
     """Sinyal untuk continue dalam loop."""
     pass
+
+
+class TeksKesalahan(str):
+    """Isi variabel di 'tangkap sebagai e': pesan kesalahannya sebagai teks, plus e.pesan dan e.jenis."""
+
+    def __new__(cls, kesalahan: BaseException):
+        pesan = getattr(kesalahan, "pesan", None) or str(kesalahan)
+        obj = super().__new__(cls, pesan)
+        obj.pesan = pesan
+        obj.jenis = nama_jenis(kesalahan)
+        return obj
 
 
 # ============================================================
