@@ -1,6 +1,6 @@
 // aplikasi.js — Editor web Bahasa Indonesia: editor kode, keluaran, contoh, dan tautan berbagi.
 //
-// Program dijalankan oleh pekerja.js (Pyodide di Web Worker). Jawaban "tanya" dan tombol
+// Program dijalankan oleh pekerja.js (mesin WebAssembly di Web Worker). Jawaban "tanya" dan tombol
 // Hentikan dikirim lewat service worker (sw.js), karena pekerja sedang sibuk menjalankan program.
 
 import { buatPenyorot } from "./sorotan.js?v=__VERSI__";
@@ -339,7 +339,7 @@ function lupakanJawaban() {
 }
 
 // =====================================================================
-// Service worker dan pekerja (Pyodide)
+// Service worker dan pekerja (mesin WebAssembly)
 // =====================================================================
 
 let pekerja = null;
@@ -404,8 +404,8 @@ function tanganiPesan(pesan) {
       perbaruiTombol();
       break;
     case "gagal-muat":
-      setStatus("Python gagal dimuat. Periksa sambungan internet, lalu muat ulang halaman.", true);
-      tambahKeluaran(`Python gagal dimuat: ${pesan.pesan}\n`, "galat");
+      setStatus("Mesin bahasa gagal dimuat. Periksa sambungan internet, lalu muat ulang halaman.", true);
+      tambahKeluaran(`Mesin bahasa gagal dimuat: ${pesan.pesan}\n`, "galat");
       break;
     case "keluaran":
       tambahKeluaran(pesan.teks, pesan.saluran === "galat" ? "galat" : "");
@@ -441,8 +441,8 @@ function hentikan() {
   kirimKeServiceWorker({ jenis: "berhenti", sesi });
   setStatus("Menghentikan…");
   clearTimeout(pengaturPaksa);
-  // Program yang tidak pernah menampilkan atau menunggu apa pun tidak memeriksa tombol Hentikan;
-  // pekerja seperti itu dihentikan paksa lalu disiapkan ulang.
+  // Mesin memeriksa tombol Hentikan berkala lewat saluran. Bila tidak menjawab (tanpa saluran,
+  // atau sedang menghitung sesuatu yang sangat besar), pekerjanya dihentikan paksa lalu disiapkan ulang.
   pengaturPaksa = setTimeout(hentikanPaksa, saluranAda ? 1500 : 0);
 }
 
@@ -454,7 +454,7 @@ function hentikanPaksa() {
   lupakanJawaban();
   pastikanBarisBaru();
   tambahKeluaran("⏹ Program dihentikan.\n", "info");
-  setStatus("Program dihentikan. Menyiapkan ulang Python…");
+  setStatus("Program dihentikan. Menyiapkan ulang mesin…");
   buatPekerja();
 }
 

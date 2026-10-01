@@ -14,7 +14,6 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 	"unicode/utf8"
 
@@ -323,13 +322,12 @@ func main() {
 	c := &cli{keluar: keluaranBaru(), masuk: &masukan{}, henti: &henti{ch: make(chan struct{})}}
 
 	sinyal := make(chan os.Signal, 1)
-	signal.Notify(sinyal, os.Interrupt, syscall.SIGPIPE)
+	signal.Notify(sinyal, append([]os.Signal{os.Interrupt}, sinyalDiabaikan...)...)
 	go func() {
 		for s := range sinyal {
-			if s == syscall.SIGPIPE {
-				continue // penulisan yang gagal ditangani di keluaran.tulis
+			if s == os.Interrupt {
+				c.henti.minta()
 			}
-			c.henti.minta()
 		}
 	}()
 

@@ -11,7 +11,7 @@
 const VERSI = "__VERSI__";
 const BERKAS_APLIKASI = ["__BERKAS__"];
 const CACHE_APLIKASI = `aplikasi-${VERSI}`;
-const CACHE_PYODIDE = "pyodide-__VERSI_PYODIDE__";
+const CACHE_MESIN = "mesin-__VERSI_MESIN__"; // mesin.wasm: hanya diunduh ulang bila mesinnya berubah
 const BATAS_TUNGGU = 20000; // ms; permintaan yang lebih lama dijawab {ulang: true} lalu diulang
 const UMUR_SESI = 60 * 60 * 1000;
 
@@ -118,7 +118,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       for (const nama of await caches.keys()) {
-        if (nama !== CACHE_APLIKASI && nama !== CACHE_PYODIDE) await caches.delete(nama);
+        if (nama !== CACHE_APLIKASI && nama !== CACHE_MESIN) await caches.delete(nama);
       }
       await self.clients.claim();
     })(),
@@ -142,8 +142,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (event.request.method !== "GET") return;
-  if (url.pathname.includes("/pyodide/")) {
-    event.respondWith(dariCacheDulu(event.request, CACHE_PYODIDE));
+  if (url.pathname.endsWith("/mesin.wasm")) {
+    event.respondWith(dariCacheDulu(event.request, CACHE_MESIN));
     return;
   }
   if (event.request.mode === "navigate" && /\/(index\.html)?$/.test(url.pathname)) {

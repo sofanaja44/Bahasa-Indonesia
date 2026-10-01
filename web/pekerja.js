@@ -1,13 +1,14 @@
-// pekerja.js — Web Worker yang menjalankan interpreter Bahasa Indonesia di Pyodide.
+// pekerja.js — Web Worker yang menjalankan mesin Bahasa Indonesia (mesin Go dalam WebAssembly,
+// mesin/cmd/wasm).
 //
 // Program berjalan sinkron di sini, jadi halaman tetap lancar. Selama program berjalan,
 // pekerja ini tidak bisa menerima pesan biasa; masukan (tanya), tunggu, dan tombol Hentikan
 // karena itu lewat "saluran": permintaan XHR sinkron yang dijawab oleh service worker (sw.js).
 
-import { loadPyodide } from "./pyodide/pyodide.mjs";
+import "./wasm_exec.js?v=__VERSI__"; // mendefinisikan globalThis.Go
 
 const SALURAN = new URL("__saluran__/", self.location.href);
-const VERSI = new URL(self.location.href).searchParams.get("v") ?? "";
+const VERSI_MESIN = "__VERSI_MESIN__";
 const PESAN_TANPA_SALURAN =
   "Masukan belum bisa dipakai di browser ini. Muat ulang halaman, atau buka editor di Chrome, " +
   "Firefox, Edge, atau Safari versi terbaru (bukan mode penyamaran).";
@@ -54,7 +55,9 @@ function periksaBerhenti() {
   return berhenti;
 }
 
-// ---- Dipanggil dari jembatan.py ----
+// ---- Dipanggil dari mesin (mesin/cmd/wasm) ----
+
+self.periksaBerhenti = periksaBerhenti;
 
 self.tulisKeluaran = (saluran, teks) => {
   if (berhenti) return true;
@@ -121,13 +124,25 @@ self.tidur = (milidetik) => {
 
 // ---- Persiapan dan perintah dari halaman ----
 
+async function muatMesin(go) {
+  const url = new URL(`mesin.wasm?v=${VERSI_MESIN}`, self.location.href);
+  try {
+    return (await WebAssembly.instantiateStreaming(fetch(url), go.importObject)).instance;
+  } catch {
+    // Mis. server tidak mengirim Content-Type application/wasm: muat sebagai data biasa.
+    const respons = await fetch(url);
+    if (!respons.ok) throw new Error(`mesin.wasm tidak bisa dimuat (status ${respons.status})`);
+    return (await WebAssembly.instantiate(await respons.arrayBuffer(), go.importObject)).instance;
+  }
+}
+
 async function siapkan() {
-  const pyodide = await loadPyodide({ indexURL: new URL("pyodide/", self.location.href).href });
-  const respons = await fetch(new URL(`interpreter.zip?v=${VERSI}`, self.location.href));
-  if (!respons.ok) throw new Error(`interpreter.zip tidak bisa dimuat (status ${respons.status})`);
-  pyodide.unpackArchive(await respons.arrayBuffer(), "zip", { extractDir: "/app" });
-  pyodide.runPython("import sys\nsys.path.insert(0, '/app')");
-  jalankanProgram = pyodide.pyimport("jembatan").jalankan;
+  const go = new Go();
+  const instance = await muatMesin(go);
+  // main() milik mesin tidak pernah selesai; bila selesai juga (mis. kehabisan memori), mesin
+  // tidak bisa dipakai lagi dan pemanggilan berikutnya gagal → halaman menyiapkan pekerja baru.
+  go.run(instance);
+  jalankanProgram = self.jalankanIndonesia;
   try {
     saluranSiap = minta("periksa").ok === true;
   } catch {
@@ -155,7 +170,7 @@ self.onmessage = async ({ data }) => {
   try {
     hasil = JSON.parse(jalankanProgram(data.kode));
   } catch (e) {
-    // Mis. Pyodide kehabisan memori: pekerja ini tidak bisa dipakai lagi.
+    // Mis. mesin kehabisan memori: pekerja ini tidak bisa dipakai lagi.
     hasil = { jenis: "fatal", pesan: String(e?.message ?? e) };
   }
   kirimPenyangga();

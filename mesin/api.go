@@ -16,3 +16,10 @@ func BelumSelesai(kode string) bool {
 	}
 	return false
 }
+
+// BuatKesalahan membuat kesalahan tanpa lokasi; dipakai IO (mis. masukan yang gagal dibaca).
+// Mesin menambahkan baris dan kolom perintah yang sedang berjalan.
+func BuatKesalahan(jenis, pesan string) *Kesalahan { return kesalahanTanpaLokasi(jenis, pesan) }
+
+// AturBenih sama dengan acak.atur_benih(n): deret angka acak berikutnya bisa diulang.
+func (m *Mesin) AturBenih(n int64) { m.acak.aturBenih(int(n)) }

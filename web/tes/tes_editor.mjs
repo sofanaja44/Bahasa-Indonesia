@@ -14,7 +14,7 @@ const BATAS_MUAT = 120_000;
 
 let server;
 let browser;
-let konteks; // satu konteks bersama: service worker dan cache Pyodide dipakai ulang antar-tes
+let konteks; // satu konteks bersama: service worker dan cache mesin dipakai ulang antar-tes
 
 before(async () => {
   server = await sajikan(SITUS);
@@ -154,12 +154,28 @@ describe("tombol Hentikan", () => {
     await page.close();
   });
 
-  test("menghentikan paksa perulangan tanpa keluaran, lalu Python disiapkan ulang", async () => {
+  test("menghentikan perulangan tanpa keluaran tanpa menyiapkan ulang mesin", async () => {
     const { page } = await bukaEditor();
     await jalankan(page, "buat x adalah 0\nselama benar lakukan:\n    ubah x menjadi x ditambah 1");
     await page.waitForTimeout(300);
+    const mulai = Date.now();
     await page.click("#tombol-hentikan");
-    await tungguStatus(page, "Program dihentikan. Menyiapkan ulang", 5000);
+    await tungguStatus(page, "Program dihentikan.", 3000);
+    assert.ok(Date.now() - mulai < 1000, "mesin memeriksa tombol Hentikan sendiri, tanpa dihentikan paksa");
+    assert.equal(await page.textContent("#status"), "Program dihentikan.");
+    await jalankan(page, 'tampilkan "jalan lagi"');
+    await tungguStatus(page, "Selesai");
+    assert.equal(await keluaran(page), "jalan lagi\n");
+    await page.close();
+  });
+
+  test("perhitungan yang sangat lama dihentikan paksa, lalu mesin disiapkan ulang", async () => {
+    const { page } = await bukaEditor();
+    // Satu perhitungan bilangan raksasa tidak sempat memeriksa tombol Hentikan.
+    await jalankan(page, "impor matematika\nbuat x adalah matematika.faktorial(1000000)\ntampilkan panjang(ubah_teks(x))");
+    await page.waitForTimeout(300);
+    await page.click("#tombol-hentikan");
+    await tungguStatus(page, "Program dihentikan", 5000);
     await tungguStatus(page, "Siap", BATAS_MUAT);
     await jalankan(page, 'tampilkan "jalan lagi"');
     await tungguStatus(page, "Selesai");
@@ -187,7 +203,7 @@ describe("kesalahan", () => {
     await page.close();
   });
 
-  test("rekursi tak berujung tidak merusak Python di browser", async () => {
+  test("rekursi tak berujung tidak merusak mesin di browser", async () => {
     const { page } = await bukaEditor();
     await jalankan(page, "fungsi f(n):\n    kembalikan f(n ditambah 1)\nf(1)");
     await tungguStatus(page, "Program berhenti: KesalahanTumpukan");

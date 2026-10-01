@@ -7,45 +7,37 @@ bangun.py — Membangun editor web Bahasa Indonesia ke folder web/situs/.
 
 Isi situs:
     index.html, gaya.css, *.js     dari folder web/
-    interpreter.zip                src/*.py + web/jembatan.py, dimuat ke Pyodide
+    mesin.wasm                     mesin Bahasa Indonesia (Go, mesin/cmd/wasm) dalam WebAssembly
+    wasm_exec.js                   penghubung WebAssembly milik Go, dari instalasi Go
     kosakata.json                  kata kunci untuk pewarnaan kode (dari src/kosakata.py)
     contoh.json                    program di folder contoh/
-    pyodide/                       Python dalam WebAssembly, diunduh dari registri npm
 
-Hanya butuh Python; tidak perlu Node.js.
+Butuh Python dan Go 1.22 atau yang lebih baru (https://go.dev/dl/); tidak perlu Node.js.
 """
 
 from __future__ import annotations
 
 import argparse
-import base64
 import hashlib
 import http.server
-import io
 import json
+import os
 import re
 import shutil
+import subprocess
 import sys
-import tarfile
-import urllib.request
-import zipfile
+import tempfile
 from functools import partial
 from pathlib import Path
 
 WEB = Path(__file__).resolve().parent
 AKAR = WEB.parent
 SITUS = WEB / "situs"
-CACHE = WEB / ".cache"
+MESIN = AKAR / "mesin"
 
 sys.path.insert(0, str(AKAR))
 
 from src.kosakata import kosakata  # noqa: E402
-
-# Versi Pyodide dan sidik jarinya (dist.integrity di registri npm).
-# Untuk memperbarui: npm view pyodide@VERSI dist.integrity
-PYODIDE_VERSI = "314.0.7"
-PYODIDE_INTEGRITAS = "sha512-0YvXxEhfEdpLfb/XkM2BFAeMROq0iMUX2bzzH9pOttyMcWkwq+HbE5uyuGD82LN7y2q+SNvi/6V5JEsOlD2R1A=="
-BERKAS_PYODIDE = ["pyodide.mjs", "pyodide.asm.mjs", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"]
 
 # Berkas statis yang disalin apa adanya (selain sw.js yang diisi daftar berkas).
 BERKAS_STATIS = [
@@ -73,45 +65,28 @@ def daftar_contoh() -> list:
     ]
 
 
-def zip_interpreter() -> bytes:
-    """src/*.py dan jembatan.py dalam satu zip; isinya sama → zip-nya sama (stempel waktu tetap)."""
-    berkas = [(f"src/{p.name}", p) for p in sorted((AKAR / "src").glob("*.py"))]
-    berkas.append(("jembatan.py", WEB / "jembatan.py"))
-    keluaran = io.BytesIO()
-    with zipfile.ZipFile(keluaran, "w", zipfile.ZIP_DEFLATED) as z:
-        for nama, path in berkas:
-            info = zipfile.ZipInfo(nama, date_time=(2026, 1, 1, 0, 0, 0))
-            info.compress_type = zipfile.ZIP_DEFLATED
-            z.writestr(info, path.read_bytes())
-    return keluaran.getvalue()
-
-
 def versi_bahasa() -> str:
-    cocok = re.search(r'^VERSI = "([^"]+)"', (AKAR / "indonesia.py").read_text(encoding="utf-8"), re.M)
+    cocok = re.search(r'^const Versi = "([^"]+)"', (MESIN / "api.go").read_text(encoding="utf-8"), re.M)
     return cocok.group(1) if cocok else "?"
 
 
-def ambil_pyodide(tujuan: Path) -> None:
-    """Unduh paket Pyodide dari registri npm (sekali, lalu disimpan di web/.cache/) dan periksa sidik jarinya."""
-    arsip = CACHE / f"pyodide-{PYODIDE_VERSI}.tgz"
-    if not arsip.exists():
-        url = f"https://registry.npmjs.org/pyodide/-/pyodide-{PYODIDE_VERSI}.tgz"
-        print(f"Mengunduh Pyodide {PYODIDE_VERSI} ...")
-        with urllib.request.urlopen(url, timeout=120) as respons:
-            data = respons.read()
-        CACHE.mkdir(exist_ok=True)
-        sementara = arsip.with_suffix(".unduhan")
-        sementara.write_bytes(data)
-        sementara.replace(arsip)
-    data = arsip.read_bytes()
-    algoritma, harapan = PYODIDE_INTEGRITAS.split("-", 1)
-    if base64.b64encode(hashlib.new(algoritma, data).digest()).decode() != harapan:
-        arsip.unlink()
-        sys.exit(f"❌ Sidik jarinya tidak cocok: {arsip.name} rusak atau bukan Pyodide {PYODIDE_VERSI}. Coba lagi.")
-    tujuan.mkdir(parents=True)
-    with tarfile.open(fileobj=io.BytesIO(data)) as tar:
-        for nama in BERKAS_PYODIDE:
-            (tujuan / nama).write_bytes(tar.extractfile(f"package/{nama}").read())
+def bangun_mesin() -> tuple[bytes, bytes]:
+    """Kompilasi mesin Go ke WebAssembly; hasilnya mesin.wasm dan wasm_exec.js yang sepasang."""
+    go = shutil.which("go")
+    if not go:
+        sys.exit("❌ Go tidak ditemukan. Pasang Go 1.22 atau yang lebih baru dari https://go.dev/dl/, lalu coba lagi.")
+    with tempfile.TemporaryDirectory() as folder:
+        keluaran = Path(folder) / "mesin.wasm"
+        subprocess.run(
+            [go, "build", "-trimpath", "-ldflags=-s -w", "-o", str(keluaran), "./cmd/wasm"],
+            cwd=MESIN, env={**os.environ, "GOOS": "js", "GOARCH": "wasm"}, check=True,
+        )
+        wasm = keluaran.read_bytes()
+    goroot = Path(subprocess.run([go, "env", "GOROOT"], capture_output=True, text=True, check=True).stdout.strip())
+    for jalur in ("lib/wasm/wasm_exec.js", "misc/wasm/wasm_exec.js"):  # Go 1.24+ / sebelumnya
+        if (goroot / jalur).exists():
+            return wasm, (goroot / jalur).read_bytes()
+    sys.exit(f"❌ wasm_exec.js tidak ditemukan di {goroot}.")
 
 
 def bangun() -> None:
@@ -119,8 +94,14 @@ def bangun() -> None:
         shutil.rmtree(SITUS)
     SITUS.mkdir()
 
+    wasm, wasm_exec = bangun_mesin()
+    # Versi mesin.wasm dihitung sendiri: bila mesinnya tidak berubah, pembaruan situs tidak
+    # membuat pengguna mengunduh ulang berkas terbesar ini.
+    versi_mesin = hashlib.sha256(wasm).hexdigest()[:12]
+    (SITUS / "mesin.wasm").write_bytes(wasm)
+
     hasil = {
-        "interpreter.zip": zip_interpreter(),
+        "wasm_exec.js": wasm_exec,
         "kosakata.json": json.dumps(kosakata(), ensure_ascii=False, separators=(",", ":")).encode(),
         "contoh.json": json.dumps(daftar_contoh(), ensure_ascii=False, separators=(",", ":")).encode(),
     }
@@ -132,28 +113,28 @@ def bangun() -> None:
     sidik = hashlib.sha256()
     for nama in sorted(hasil):
         sidik.update(nama.encode() + b"\0" + hasil[nama] + b"\0")
+    sidik.update(versi_mesin.encode())
     versi = sidik.hexdigest()[:12]
 
     for nama, isi in hasil.items():
-        if nama.endswith((".html", ".js")):
+        if nama.endswith((".html", ".js")) and nama != "wasm_exec.js":
             isi = (isi.decode("utf-8")
                    .replace("__VERSI__", versi)
                    .replace("__VERSI_BAHASA__", versi_bahasa())
-                   .replace("__VERSI_PYODIDE__", PYODIDE_VERSI)).encode("utf-8")
+                   .replace("__VERSI_MESIN__", versi_mesin)).encode("utf-8")
         (SITUS / nama).write_bytes(isi)
 
     pakai_versi = {"gaya.css", "aplikasi.js", "sorotan.js", "pekerja.js",
-                   "interpreter.zip", "kosakata.json", "contoh.json"}
+                   "wasm_exec.js", "kosakata.json", "contoh.json"}
     berkas_cache = ["./"] + [f"{n}?v={versi}" if n in pakai_versi else n
                              for n in sorted(hasil) if n != "index.html"]
     sw = ((WEB / "sw.js").read_text(encoding="utf-8")
           .replace("__VERSI__", versi)
-          .replace("__VERSI_PYODIDE__", PYODIDE_VERSI)
+          .replace("__VERSI_MESIN__", versi_mesin)
           .replace('["__BERKAS__"]', json.dumps(berkas_cache)))
     (SITUS / "sw.js").write_text(sw, encoding="utf-8")
-
-    ambil_pyodide(SITUS / "pyodide")
-    print(f"✅ Situs selesai dibangun di {SITUS.relative_to(AKAR)} (versi {versi}, Pyodide {PYODIDE_VERSI})")
+    ukuran = len(wasm) / 1e6
+    print(f"✅ Situs selesai dibangun di {SITUS.relative_to(AKAR)} (versi {versi}, mesin {versi_mesin}, {ukuran:.1f} MB)")
 
 
 class _Penyaji(http.server.SimpleHTTPRequestHandler):

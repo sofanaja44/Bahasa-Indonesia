@@ -1,10 +1,10 @@
 {
   "name": "bahasa-indonesia-editor-web",
   "private": true,
-  "description": "Editor web Bahasa Pemrograman Indonesia (Pyodide). Hanya dipakai untuk pengujian; situsnya dibangun dengan python bangun.py.",
+  "description": "Editor web Bahasa Pemrograman Indonesia (mesin Go dalam WebAssembly). Hanya dipakai untuk pengujian; situsnya dibangun dengan python bangun.py.",
   "type": "module",
   "scripts": {
-    "tes": "node tes/tes_pyodide.mjs && node --test tes/tes_editor.mjs"
+    "tes": "node tes/tes_mesin.mjs && node --test tes/tes_editor.mjs"
   },
   "devDependencies": {
     "playwright": "1.56.1"
