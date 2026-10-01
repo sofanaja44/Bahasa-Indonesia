@@ -144,7 +144,19 @@ def mode_interaktif():
             print(f"❌ Kesalahan internal: {e}")
 
 
+def _pakai_utf8():
+    """Di Windows, keluaran yang dialihkan ke berkas atau pipa memakai kode halaman lama
+    (mis. cp1252) yang tidak bisa menulis emoji seperti ❌. Pakai UTF-8 saja."""
+    for aliran in (sys.stdin, sys.stdout, sys.stderr):
+        if aliran is not None and (aliran.encoding or "").lower().replace("-", "") != "utf8":
+            try:
+                aliran.reconfigure(encoding="utf-8", errors="replace")
+            except (AttributeError, ValueError):
+                pass
+
+
 def main():
+    _pakai_utf8()
     args = sys.argv[1:]
 
     if not args or args[0] == "repl":
