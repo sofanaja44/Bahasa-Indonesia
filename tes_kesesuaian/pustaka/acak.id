@@ -1,0 +1,11 @@
+impor acak
+buat dadu adalah angka acak dari 1 sampai 6
+tampilkan dadu paling sedikit 1 dan dadu paling banyak 6
+buat hasil adalah acak.bilangan(10, 20)
+tampilkan hasil paling sedikit 10 dan hasil paling banyak 20
+buat warna adalah ["merah", "hijau"]
+tampilkan acak.pilih(warna) ada dalam warna
+acak.kocok(warna)
+tampilkan panjang(warna)
+buat a adalah acak.angka()
+tampilkan a paling sedikit 0 dan a kurang dari 1

@@ -1,0 +1,26 @@
+# 'tangkap kesalahan' menangkap kesalahan jenis apa pun,
+# dan pesannya bisa dipakai lewat variabel 'kesalahan'.
+coba:
+    tampilkan nilai_rapor
+tangkap kesalahan:
+    tampilkan "Ups:", kesalahan
+    tampilkan "Jenisnya:", kesalahan.jenis
+
+# Nama padanan Python juga dikenali.
+coba:
+    buat hasil adalah 10 dibagi 0
+tangkap ZeroDivisionError sebagai e:
+    tampilkan "Tidak bisa dibagi nol!"
+tangkap sebagai e:
+    tampilkan "Kesalahan lain: " + e.pesan
+akhirnya:
+    tampilkan "Selesai"
+
+# Rekursi tak berujung pun bisa ditangkap.
+fungsi selamanya(n):
+    kembalikan selamanya(n ditambah 1)
+
+coba:
+    selamanya(0)
+tangkap Kesalahan sebagai e:
+    tampilkan "Tertangkap:", e.jenis

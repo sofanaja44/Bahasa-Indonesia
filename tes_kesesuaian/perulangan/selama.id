@@ -1,0 +1,4 @@
+buat n adalah 1
+selama n kurang dari 4, lakukan:
+    tampilkan n
+    tambahkan 1 ke n

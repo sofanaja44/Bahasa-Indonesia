@@ -1,0 +1,193 @@
+=== closure
+fungsi pembuat(n):
+    fungsi tambah(x):
+        kembalikan x + n
+    kembalikan tambah
+buat t5 adalah pembuat(5)
+tampilkan t5(1), pembuat(10)(1)
+=== closure_penghitung
+fungsi penghitung():
+    buat hitung adalah 0
+    fungsi naik():
+        tambahkan 1 ke hitung
+        kembalikan hitung
+    kembalikan naik
+buat c adalah penghitung()
+c()
+c()
+tampilkan c()
+=== closure_perulangan
+buat fungsi_fungsi adalah []
+untuk i dari 1 sampai 3:
+    fungsi f():
+        kembalikan i
+    tambahkan f ke fungsi_fungsi
+untuk setiap g dalam fungsi_fungsi:
+    cetak g()
+tampilkan
+=== bawaan_parameter
+fungsi sapa(nama, salam = "Halo", tanda = "!"):
+    kembalikan salam + " " + nama + tanda
+tampilkan sapa("Budi"), sapa("Ani", "Hai"), sapa("X", "Yo", "?")
+=== bawaan_parameter_dievaluasi_saat_dipanggil
+buat dasar adalah 1
+fungsi f(x = dasar * 10):
+    kembalikan x
+tampilkan f()
+dasar adalah 2
+tampilkan f()
+=== bawaan_parameter_daftar_baru
+fungsi f(d = []):
+    d.tambahkan(1)
+    kembalikan d
+tampilkan f(), f()
+=== bawaan_parameter_galat
+fungsi f(x = 1 / 0):
+    kembalikan x
+tampilkan f(5)
+tampilkan f()
+=== bawaan_parameter_memanggil_fungsi
+fungsi dua():
+    kembalikan 2
+fungsi f(x = dua() * 3):
+    kembalikan x
+tampilkan f()
+=== argumen_kurang
+fungsi f(a, b):
+    kembalikan a
+f(1)
+=== argumen_lebih
+fungsi f(a):
+    kembalikan a
+f(1, 2)
+=== bukan_fungsi
+buat x adalah 5
+x()
+=== panggil_teks
+"halo"()
+=== rekursi_dalam
+fungsi hitung(n):
+    jika n adalah 0:
+        kembalikan 0
+    kembalikan 1 + hitung(n - 1)
+tampilkan hitung(2900)
+=== rekursi_batas
+fungsi hitung(n):
+    jika n adalah 0:
+        kembalikan 0
+    kembalikan 1 + hitung(n - 1)
+tampilkan hitung(3001)
+=== rekursi_tepat_batas
+fungsi hitung(n):
+    jika n adalah 0:
+        kembalikan 0
+    kembalikan 1 + hitung(n - 1)
+tampilkan hitung(2999)
+=== rekursi_saling
+fungsi genap(n):
+    jika n adalah 0:
+        kembalikan benar
+    kembalikan ganjil(n - 1)
+fungsi ganjil(n):
+    jika n adalah 0:
+        kembalikan salah
+    kembalikan genap(n - 1)
+tampilkan genap(100), ganjil(7)
+=== fibonacci
+fungsi fib(n):
+    jika n < 2:
+        kembalikan n
+    kembalikan fib(n - 1) + fib(n - 2)
+tampilkan fib(20)
+=== fungsi_anonim
+buat kuadrat adalah fungsi(x): x * x
+buat kubik adalah fungsi(x): kembalikan x * x * x
+tampilkan kubik(3)
+tampilkan kuadrat(4), kuadrat
+=== fungsi_tanpa_kembalikan
+fungsi f():
+    buat x adalah 1
+tampilkan f()
+f()
+=== fungsi_repl_hasil
+fungsi f():
+    kembalikan [1, 2]
+f()
+=== fungsi_repl_kosong
+fungsi f():
+    kembalikan kosong
+f()
+=== konstanta
+tetap PI adalah 3.14
+tampilkan PI
+PI adalah 3
+=== konstanta_dalam_fungsi
+tetap MAKS adalah 10
+fungsi f():
+    MAKS adalah 5
+f()
+=== konstanta_tambahkan
+tetap N adalah 1
+tambahkan 1 ke N
+=== konstanta_daftar_diubah
+tetap D adalah [1]
+D.tambahkan(2)
+tampilkan D
+=== konstanta_dibuat_ulang
+tetap N adalah 1
+buat N adalah 2
+tampilkan N
+=== variabel_global_diubah
+buat skor adalah 0
+fungsi tambah_skor():
+    skor adalah skor + 10
+tambah_skor()
+tambah_skor()
+tampilkan skor
+=== variabel_lokal_bayangan
+buat x adalah "global"
+fungsi f():
+    buat x adalah "lokal"
+    kembalikan x
+tampilkan f(), x
+=== variabel_blok_jika
+jika benar:
+    buat dalam_jika adalah 1
+tampilkan dalam_jika
+=== setel_belum_ada
+y adalah 5
+=== setel_belum_ada_mirip
+buat nilai adalah 1
+nilia adalah 5
+=== ambil_belum_ada_mirip
+buat jumlah_total adalah 1
+tampilkan jumlah_totl
+=== ambil_belum_ada_bawaan_mirip
+tampilkan panjng("x")
+=== deklarasi_bertipe
+bilangan a adalah "12"
+desimal b adalah 3
+teks c adalah 3.0
+logika d adalah 0
+tampilkan a, b, c, d, a + 1
+=== deklarasi_bertipe_gagal
+bilangan a adalah "abc"
+=== deklarasi_bertipe_desimal_teks
+desimal a adalah "1,5"
+=== deklarasi_bertipe_bilangan_desimal
+bilangan a adalah 3.99
+bilangan b adalah -3.99
+bilangan c adalah benar
+tampilkan a, b, c
+=== deklarasi_repl
+buat x adalah 5
+=== panggil_bertingkat
+fungsi f(x):
+    kembalikan [x, x * 2]
+tampilkan f(3)[1], panjang(f(1))
+=== fungsi_sebagai_argumen
+fungsi terapkan(fn, nilai):
+    kembalikan fn(nilai)
+fungsi gandakan(x):
+    kembalikan x * 2
+tampilkan terapkan(gandakan, 21), terapkan(panjang, "abc"), terapkan(fungsi(x): x + 1, 1)

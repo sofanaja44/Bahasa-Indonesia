@@ -75,3 +75,59 @@ class KesalahanNilai(KesalahanIndonesia):
 class KesalahanTumpukan(KesalahanIndonesia):
     """StackOverflowError — rekursi terlalu dalam."""
     pass
+
+
+# ============================================================
+# Nama jenis kesalahan untuk 'tangkap NAMA'
+# ============================================================
+
+# Padanan nama Python (Inggris), agar contoh seperti 'tangkap ZeroDivisionError' juga berjalan.
+_PADANAN_PYTHON = {
+    "KesalahanSintaks": "SyntaxError",
+    "KesalahanNama": "NameError",
+    "KesalahanTipe": "TypeError",
+    "KesalahanIndeks": "IndexError",
+    "KesalahanBagiNol": "ZeroDivisionError",
+    "KesalahanBerkas": "FileNotFoundError",
+    "KesalahanKunci": "KeyError",
+    "KesalahanNilai": "ValueError",
+    "KesalahanTumpukan": "RecursionError",
+}
+_PADANAN = {**_PADANAN_PYTHON, **{inggris: indonesia for indonesia, inggris in _PADANAN_PYTHON.items()}}
+
+# 'tangkap Kesalahan' menangkap kesalahan jenis apa pun.
+NAMA_SEMUA_KESALAHAN = {"kesalahan", "kesalahanindonesia", "error", "exception"}
+
+
+def nama_tangkap(kelas: type) -> set:
+    """Nama (huruf kecil) yang cocok di 'tangkap NAMA' untuk kesalahan berkelas ini.
+
+    Contoh untuk KesalahanBagiNol: 'kesalahanbaginol', 'zerodivisionerror', dan
+    nama yang menangkap semua kesalahan seperti 'kesalahan'.
+    """
+    nama = set(NAMA_SEMUA_KESALAHAN)
+    for k in kelas.__mro__:
+        if k in (BaseException, object):
+            break
+        nama.add(k.__name__.lower())
+        if k.__name__ in _PADANAN:
+            nama.add(_PADANAN[k.__name__].lower())
+    return nama
+
+
+def semua_nama_tangkap() -> dict:
+    """Semua nama jenis kesalahan yang dikenal: huruf kecil → penulisan baku."""
+    nama = {n: "Kesalahan" for n in NAMA_SEMUA_KESALAHAN}
+    for kelas in KesalahanIndonesia.__subclasses__():
+        nama[kelas.__name__.lower()] = kelas.__name__
+        if kelas.__name__ in _PADANAN_PYTHON:
+            nama[_PADANAN_PYTHON[kelas.__name__].lower()] = _PADANAN_PYTHON[kelas.__name__]
+    return nama
+
+
+def nama_jenis(kesalahan: BaseException) -> str:
+    """Nama jenis kesalahan dalam bahasa Indonesia, mis. 'KesalahanBagiNol'."""
+    nama = type(kesalahan).__name__
+    if isinstance(kesalahan, KesalahanIndonesia):
+        return nama
+    return _PADANAN.get(nama, "Kesalahan")

@@ -1,0 +1,12 @@
+untuk i dari 1 sampai 10:
+    jika i habis dibagi 2, maka lewati
+    jika i lebih dari 7, maka berhenti
+    cetak i
+tampilkan
+untuk i dari 1 sampai 5:
+    coba:
+        jika i adalah 3, maka berhenti
+        cetak i
+    tangkap:
+        tampilkan "tidak terjadi"
+tampilkan

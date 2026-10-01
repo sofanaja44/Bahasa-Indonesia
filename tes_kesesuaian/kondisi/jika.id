@@ -1,0 +1,15 @@
+buat nilai adalah 75
+jika nilai paling sedikit 90:
+    tampilkan "A"
+atau jika nilai paling sedikit 70:
+    tampilkan "B"
+selainnya:
+    tampilkan "C"
+
+jika nilai adalah 75, maka tampilkan "tepat"
+jika tidak, tampilkan "meleset"
+
+kalau nilai kurang dari 50, tampilkan "kurang"
+kalau tidak, tampilkan "cukup"
+
+jika nilai lebih dari 100 maka tampilkan "aneh" jika tidak maka tampilkan "wajar"

@@ -1,0 +1,3 @@
+# Kode Go selalu berakhir baris LF (seperti hasil gofmt), juga saat di-checkout di Windows.
+*.go text eol=lf
+go.mod text eol=lf

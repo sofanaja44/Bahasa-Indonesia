@@ -1,0 +1,263 @@
+=== daftar_metode
+buat d adalah [3, 1, 2]
+d.tambahkan(5)
+tampilkan d, d.panjang()
+d.urutkan()
+tampilkan d
+d.balik()
+tampilkan d
+tampilkan d.cari(2), d.cari(9)
+d.sisipkan(0, "awal")
+d.sisipkan(-1, "akhir-1")
+d.sisipkan(100, "ujung")
+d.sisipkan(-100, "depan")
+tampilkan d
+tampilkan d.hapusPosisi(0), d.hapusPosisi(-1), d
+d.hapus(5)
+tampilkan d
+buat s adalah d.salin()
+s.kosongkan()
+tampilkan s, d
+=== daftar_hapus_tidak_ada
+buat d adalah [1, 2]
+d.hapus(3)
+=== daftar_hapus_posisi_luar
+buat d adalah [1, 2]
+d.hapusPosisi(5)
+=== daftar_hapus_posisi_luar_negatif
+buat d adalah [1, 2]
+d.hapusPosisi(-3)
+=== daftar_hapus_posisi_desimal
+buat d adalah [1, 2]
+d.hapusPosisi(1.0)
+=== daftar_sisip_logika
+buat d adalah [1, 2]
+d.sisipkan(benar, 0)
+=== daftar_urutkan_campur
+buat d adalah [1, "a"]
+d.urutkan()
+=== daftar_urutkan_campur_angka
+buat d adalah [3, 1.5, benar, 0, -2.5, 1, 1.0]
+d.urutkan()
+tampilkan d
+=== daftar_urutkan_teks
+buat d adalah ["pisang", "Apel", "apel", "ceri", ""]
+d.urutkan()
+tampilkan d
+=== daftar_urutkan_kosong_satu
+buat d adalah [[1]]
+d.urutkan()
+tampilkan d, diurutkan([])
+=== daftar_urutkan_daftar
+tampilkan diurutkan([[2], [1]])
+=== daftar_indeks
+buat d adalah [10, 20, 30]
+tampilkan d[0], d[-1], d[benar], d[1:], d[:-1], d[-10:10], d[2:1], d[:]
+d[0] adalah 99
+d[-1] adalah 77
+tampilkan d
+=== daftar_indeks_luar
+buat d adalah [10, 20, 30]
+tampilkan d[3]
+=== daftar_indeks_luar_negatif
+buat d adalah [10, 20, 30]
+tampilkan d[-4]
+=== daftar_setel_luar
+buat d adalah [10, 20, 30]
+d[3] adalah 1
+=== daftar_setel_teks
+buat d adalah [10, 20, 30]
+d["a"] adalah 1
+=== daftar_indeks_teks
+buat d adalah [10, 20, 30]
+tampilkan d["a"]
+=== daftar_indeks_besar
+buat d adalah [10, 20, 30]
+tampilkan d[2 ** 70]
+=== daftar_irisan_besar
+buat d adalah [10, 20, 30]
+tampilkan d[2 ** 70:], d[:2 ** 70], d[-(2 ** 70):1]
+=== daftar_irisan_desimal
+buat d adalah [10, 20, 30]
+tampilkan d[1.0:]
+=== daftar_irisan_logika
+buat d adalah [10, 20, 30]
+tampilkan d[benar:]
+=== irisan_angka
+tampilkan 5[1:2]
+=== daftar_sama
+buat a adalah [1, 2]
+buat b adalah [1, 2]
+tampilkan a == b, a == a, a bukan b, [1] ada dalam [[1]], a ada dalam [a], 1.0 ada dalam [1]
+=== daftar_bersarang
+buat d adalah [[1, 2], [3, [4, 5]], []]
+tampilkan d, d[1][1][0], panjang(d)
+d[1][1][0] adalah "x"
+tampilkan d
+=== daftar_tambahkan_kalimat
+buat d adalah []
+tambahkan 1 ke d
+tambahkan [2] ke d
+tampilkan d
+=== daftar_repl
+[1, "a", [kosong, benar]]
+=== kamus_metode
+buat k adalah {"a": 1, "b": 2}
+tampilkan k.kunci(), k.nilai(), k.pasang(), k.adaKunci("a"), k.adaKunci("z")
+tampilkan k.dapatkan("a"), k.dapatkan("z"), k.dapatkan("z", 0)
+k.hapusKunci("a")
+tampilkan k
+k["c"] adalah 3
+k["b"] adalah 20
+tampilkan k, panjang(k)
+k["a"] adalah 0
+tampilkan k
+=== kamus_kunci_campur
+buat k adalah {1: "satu", 1.0: "satu lagi", benar: "benar", "1": "teks"}
+tampilkan k, k[1], k[1.0], panjang(k)
+=== kamus_kunci_daftar
+buat d adalah [1]
+buat k adalah {}
+k[d] adalah "daftar"
+tampilkan k[d], k.adaKunci([1])
+=== kamus_kunci_tidak_ada
+buat k adalah {"a": 1}
+tampilkan k["b"]
+=== kamus_kunci_tidak_ada_angka
+buat k adalah {"a": 1}
+tampilkan k[1.5]
+=== kamus_hapus_tidak_ada
+buat k adalah {"a": 1}
+k.hapusKunci("b")
+=== kamus_tambahkan
+buat k adalah {"a": 1}
+tambahkan 1 ke k
+=== kamus_iterasi_ubah
+buat k adalah {"a": 1, "b": 2}
+untuk setiap kunci dalam k:
+    k[kunci + kunci] adalah 0
+tampilkan k
+=== kamus_kosong_logika
+jika {}:
+    tampilkan "isi"
+selainnya:
+    tampilkan "kosong"
+tampilkan ubah_logika({}), ubah_logika({"a": 1}), ubah_logika([]), ubah_logika([0]), ubah_logika(""), ubah_logika(0.0)
+=== kamus_metode_salah
+buat k adalah {}
+k.tambahkan(1)
+=== kamus_repl
+{"a": [1, 2], 3: {"b": kosong}}
+=== kamus_dalam
+buat k adalah {"a": 1}
+tampilkan "a" ada dalam k, "b" tidak ada dalam k, 1 ada dalam k
+=== daftar_metode_salah
+buat d adalah []
+d.tambah(1)
+=== daftar_metode_tampil
+buat d adalah []
+tampilkan d.tambahkan, jenis(d.tambahkan), d.tambahkan == d.tambahkan, "a".panjang == "a".panjang
+=== iterasi_daftar_berubah
+buat d adalah [1, 2, 3]
+untuk setiap x dalam d:
+    jika x < 3:
+        d.tambahkan(x * 10)
+    cetak x
+    cetak " "
+tampilkan
+=== iterasi_daftar_kosongkan
+buat d adalah [1, 2, 3]
+untuk setiap x dalam d:
+    d.kosongkan()
+    cetak x
+tampilkan
+=== iterasi_daftar_hapus
+buat d adalah [1, 2, 3, 4]
+untuk setiap x dalam d:
+    d.hapus(x)
+tampilkan d
+=== untuk_setiap_angka
+untuk setiap x dalam 5:
+    tampilkan x
+=== untuk_setiap_kosong
+untuk setiap x dalam kosong:
+    tampilkan x
+=== bawaan_koleksi
+tampilkan maksimum(3, 7, 2), minimum([4, 1, 9]), maksimum("abc"), maksimum([1, 2.5]), minimum(benar, 0), maksimum(1, 1.0)
+tampilkan jumlah([1, 2, 3]), jumlah([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]), jumlah([]), jumlah([1, 0.5]), jumlah([10 ** 20, 1]), jumlah([2 ** 63, 1.5])
+tampilkan diurutkan([3, 1, 2]), diurutkan("cba"), dibalik([1, 2, 3]), dibalik("abc")
+tampilkan rentang(5), rentang(2, 5), rentang(10, 0, -3), rentang(0), rentang(5, 1), rentang(-3, 3, 2)
+tampilkan panjang("héllo"), panjang([1]), panjang({})
+=== bawaan_maksimum_kosong
+tampilkan maksimum([])
+=== bawaan_maksimum_tanpa_argumen
+tampilkan minimum()
+=== bawaan_maksimum_campur
+tampilkan maksimum(1, "a")
+=== bawaan_maksimum_satu
+tampilkan maksimum([[1]]), minimum(kosong), maksimum([kosong])
+=== bawaan_jumlah_teks
+tampilkan jumlah(["a"])
+=== bawaan_jumlah_logika
+tampilkan jumlah([benar])
+=== bawaan_jumlah_bukan_daftar
+tampilkan jumlah(5)
+=== bawaan_jumlah_teks_angka
+tampilkan jumlah("12")
+=== bawaan_rentang_desimal
+tampilkan rentang(1.5)
+=== bawaan_rentang_logika
+tampilkan rentang(benar)
+=== bawaan_rentang_nol
+tampilkan rentang(1, 5, 0)
+=== bawaan_rentang_kebanyakan
+tampilkan rentang(1, 2, 3, 4)
+=== bawaan_rentang_kosong
+tampilkan rentang()
+=== bawaan_rentang_besar
+tampilkan rentang(2 ** 64, 2 ** 64 + 3), rentang(9223372036854775805, 9223372036854775809)
+=== bawaan_panjang_angka
+tampilkan panjang(5)
+=== bawaan_jenis
+tampilkan jenis(1), jenis(1.5), jenis("a"), jenis(benar), jenis(kosong), jenis([]), jenis({}), jenis(panjang), jenis(2 ** 100)
+fungsi f():
+    kembalikan 1
+kelas K:
+    fungsi m():
+        kembalikan 1
+buat k adalah K()
+tampilkan jenis(f), jenis(K), jenis(k), jenis(k.m)
+impor matematika
+tampilkan jenis(matematika), jenis(matematika.akar)
+=== bawaan_tampil_nilai
+fungsi f():
+    kembalikan 1
+kelas K:
+    fungsi m():
+        kembalikan 1
+buat k adalah K()
+tampilkan f, K, k, k.m, panjang
+impor matematika
+tampilkan matematika, matematika.akar
+=== bawaan_ubah_angka
+tampilkan ubah_angka("12"), ubah_angka(3.9), ubah_angka(-3.9), ubah_angka(benar), ubah_angka(" 7 "), ubah_angka("1_000"), ubah_angka(10.0 ** 20), ubah_angka("١٢")
+=== bawaan_ubah_angka_desimal
+tampilkan ubah_angka("3.5")
+=== bawaan_ubah_angka_teks
+tampilkan ubah_angka("abc")
+=== bawaan_ubah_angka_daftar
+tampilkan ubah_angka([1])
+=== bawaan_ubah_desimal
+tampilkan ubah_desimal("3,5"), ubah_desimal(2), ubah_desimal("1e3"), ubah_desimal(benar), ubah_desimal(" -0,25 ")
+=== bawaan_ubah_desimal_salah
+tampilkan ubah_desimal("x")
+=== bawaan_argumen_salah
+tampilkan panjang(1, 2)
+=== bawaan_mutlak
+tampilkan mutlak(-5), mutlak(-2.5), mutlak(-(2 ** 70)), mutlak(0), mutlak(-0.0)
+=== bawaan_mutlak_teks
+tampilkan mutlak("a")
+=== kesalahan_bawaan
+tampilkan Kesalahan("x"), Kesalahan(), Error(5), Kesalahan([1])
+=== ubah_logika_nilai
+tampilkan ubah_logika(panjang), ubah_logika(kosong), ubah_logika("salah")

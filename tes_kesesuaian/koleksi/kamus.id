@@ -1,0 +1,9 @@
+buat profil adalah {
+    "nama": "Budi",
+    "umur": 17,
+}
+profil["kota"] adalah "Bandung"
+tampilkan profil["nama"], profil["kota"], panjang(profil)
+tampilkan profil.kunci()
+tampilkan profil.dapatkan("hobi", "belum ada")
+tampilkan "umur" ada dalam profil

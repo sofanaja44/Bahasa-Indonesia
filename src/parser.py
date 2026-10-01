@@ -13,16 +13,17 @@ gaya natural yang terbaca seperti kalimat biasa:
 """
 
 from __future__ import annotations
+import difflib
 from typing import List, Optional
 
 from src.token_types import TokenType, KATA_KUNCI, jelaskan_tipe
 from src.lexer import Token
-from src.errors import KesalahanSintaks
+from src.errors import KesalahanSintaks, NAMA_SEMUA_KESALAHAN, semua_nama_tangkap
 from src.ast_nodes import (
     NodeProgram, NodeAngka, NodeTeks, NodeTeksFormat, NodeLogika, NodeKosong,
-    NodeIdentifier, NodeOperasiBiner, NodeOperasiUnari,
+    NodeIdentifier, NodeWaktuSekarang, NodeAngkaAcak, NodeTanya, NodeOperasiBiner, NodeOperasiUnari,
     NodeDeklarasiVariabel, NodeKonstanta, NodePenugasan, NodePenugasanGabungan,
-    NodeTambahkan, NodeTampilkan, NodeJika, NodePilih, NodeSelama, NodeUntuk,
+    NodeTambahkan, NodeTampilkan, NodeTunggu, NodeJika, NodePilih, NodeSelama, NodeUntuk,
     NodeUntukSetiap, NodeUlangi, NodeUlangiKali, NodeBerhenti, NodeLewati,
     NodeFungsi, NodeFungsiAnonim, NodePanggilFungsi, NodeKembalikan, NodeDaftar,
     NodeKamus, NodeAksesDaftar, NodeIrisanDaftar, NodeAksesAtribut,
@@ -32,6 +33,24 @@ from src.ast_nodes import (
 
 # Tipe token kata kunci — boleh dipakai sebagai nama atribut setelah titik
 _TIPE_KATA_KUNCI = set(KATA_KUNCI.values())
+
+# Kata yang mungkin dimaksud saat sebuah perintah salah ketik, mis. "tampilkn" → "tampilkan"
+_KATA_PERINTAH = sorted(set(KATA_KUNCI) | {
+    "ubah", "tambahkan", "kurangi", "kalikan", "bagi", "tunggu", "tanya",
+})
+
+
+def _petunjuk_kata_awal(tok: Token) -> str:
+    """Petunjuk bila kata pertama sebuah perintah mirip kata kunci: 'Jika' atau 'tampilkn'."""
+    if tok.tipe != TokenType.IDENTIFIER:
+        return ""
+    kata = tok.nilai
+    if kata != kata.lower() and kata.lower() in KATA_KUNCI:
+        return f"\n  Petunjuk: kata kunci ditulis dengan huruf kecil. Tulis '{kata.lower()}', bukan '{kata}'."
+    mirip = difflib.get_close_matches(kata.lower(), _KATA_PERINTAH, n=1, cutoff=0.75)
+    if mirip:
+        return f"\n  Petunjuk: maksud Anda '{mirip[0]}'?"
+    return ""
 
 
 def jelaskan_token(tok: Token) -> str:
@@ -58,6 +77,8 @@ class Parser:
         self.pos = 0
         self.kode_sumber = kode_sumber
         self.daftar_baris = kode_sumber.split("\n") if kode_sumber else []
+        self._dalam_perulangan = 0  # berhenti/lewati hanya boleh di dalam perulangan
+        self._dalam_fungsi = 0      # kembalikan hanya boleh di dalam fungsi
 
     # ============================
     # Helpers
@@ -94,10 +115,13 @@ class Parser:
         if self.periksa(tipe):
             return self.maju()
         tok = self.saat_ini()
+        if not pesan and tipe == TokenType.IDENTIFIER and tok.tipe in _TIPE_KATA_KUNCI \
+                and isinstance(tok.nilai, str) and tok.nilai.isidentifier():
+            pesan = (f"'{tok.nilai}' adalah kata kunci, jadi tidak bisa dipakai sebagai nama. "
+                     f"Coba nama lain, misalnya '{tok.nilai}_saya'.")
         if not pesan:
             pesan = f"Diharapkan {jelaskan_tipe(tipe)}, tetapi yang ditemukan {jelaskan_token(tok)}"
-        baris_kode = self.daftar_baris[tok.baris - 1] if tok.baris - 1 < len(self.daftar_baris) else ""
-        raise KesalahanSintaks(pesan, baris=tok.baris, kolom=tok.kolom, baris_kode=baris_kode)
+        self._error(pesan, tok)
 
     def lewati_baris_baru(self):
         while self.periksa(TokenType.BARIS_BARU):
@@ -107,10 +131,17 @@ class Parser:
         if tok is None:
             tok = self.saat_ini()
         baris_kode = self.daftar_baris[tok.baris - 1] if tok.baris - 1 < len(self.daftar_baris) else ""
-        raise KesalahanSintaks(pesan, baris=tok.baris, kolom=tok.kolom, baris_kode=baris_kode)
+        kesalahan = KesalahanSintaks(pesan, baris=tok.baris, kolom=tok.kolom, baris_kode=baris_kode)
+        # Kesalahan di akhir masukan berarti kodenya belum selesai ditulis (dipakai REPL multi-baris).
+        # Sesudah token terakhir hanya ada penutup blok (DEDENT), baris baru, dan EOF.
+        sisa = self.tokens[self.pos:] if tok is self.saat_ini() else [tok]
+        kesalahan.belum_selesai = all(
+            t.tipe in (TokenType.DEDENT, TokenType.BARIS_BARU, TokenType.EOF) for t in sisa
+        )
+        raise kesalahan
 
-    def _harapkan_akhir_pernyataan(self):
-        """Pastikan satu perintah berakhir di sini (baris baru, akhir blok, atau akhir program)."""
+    def _harapkan_akhir_pernyataan(self, awal: int):
+        """Pastikan perintah yang dimulai di token `awal` berakhir di sini."""
         if self.periksa(TokenType.BARIS_BARU, TokenType.DEDENT, TokenType.EOF):
             return
         # Perintah yang diakhiri blok menjorok (jika, selama, ...) sudah menelan baris barunya
@@ -119,6 +150,7 @@ class Parser:
         self._error(
             f"Perintah seharusnya berakhir di sini, tetapi masih ada {jelaskan_token(self.saat_ini())}. "
             "Tulis setiap perintah di barisnya sendiri."
+            + _petunjuk_kata_awal(self.tokens[awal])
         )
 
     # ============================
@@ -129,10 +161,11 @@ class Parser:
         pernyataan = []
         self.lewati_baris_baru()
         while not self.periksa(TokenType.EOF):
+            awal = self.pos
             stmt = self.parse_pernyataan()
             if stmt is not None:
                 pernyataan.append(stmt)
-            self._harapkan_akhir_pernyataan()
+            self._harapkan_akhir_pernyataan(awal)
             self.lewati_baris_baru()
         return NodeProgram(pernyataan)
 
@@ -185,10 +218,11 @@ class Parser:
             self.lewati_baris_baru()
             if self.periksa(TokenType.DEDENT, TokenType.EOF):
                 break
+            awal = self.pos
             stmt = self.parse_pernyataan()
             if stmt is not None:
                 stmts.append(stmt)
-            self._harapkan_akhir_pernyataan()
+            self._harapkan_akhir_pernyataan(awal)
             self.lewati_baris_baru()
         if self.periksa(TokenType.DEDENT):
             self.maju()
@@ -224,11 +258,12 @@ class Parser:
             return self.parse_fungsi()
         if t == TokenType.KEMBALIKAN:
             return self.parse_kembalikan()
-        if t == TokenType.BERHENTI:
+        if t in (TokenType.BERHENTI, TokenType.LEWATI):
             tok = self.maju()
-            return NodeBerhenti(baris=tok.baris, kolom=tok.kolom)
-        if t == TokenType.LEWATI:
-            tok = self.maju()
+            if not self._dalam_perulangan:
+                self._error(f"'{tok.nilai}' hanya bisa dipakai di dalam perulangan (selama, untuk, ulangi).", tok)
+            if t == TokenType.BERHENTI:
+                return NodeBerhenti(baris=tok.baris, kolom=tok.kolom)
             return NodeLewati(baris=tok.baris, kolom=tok.kolom)
         if t == TokenType.KELAS:
             return self.parse_kelas()
@@ -358,15 +393,37 @@ class Parser:
 
     # Token yang pasti memulai sebuah nilai dan tidak mungkin melanjutkan ekspresi
     _AWAL_NILAI = (
-        TokenType.IDENTIFIER, TokenType.DIRI, TokenType.SUPER, TokenType.ANGKA,
+        TokenType.IDENTIFIER, TokenType.WAKTU_SEKARANG, TokenType.ANGKA_ACAK,
+        TokenType.DIRI, TokenType.SUPER, TokenType.ANGKA,
         TokenType.DESIMAL, TokenType.TEKS, TokenType.TEKS_FORMAT, TokenType.BENAR,
         TokenType.SALAH, TokenType.KOSONG, TokenType.KURAWAL_BUKA, TokenType.FUNGSI,
         TokenType.MASUKAN, TokenType.MASUKAN_ANGKA, TokenType.MASUKAN_DESIMAL,
     )
 
+    # Satuan untuk "tunggu 1 detik"; tanpa satuan berarti detik
+    _SATUAN_WAKTU = {"detik": 1, "milidetik": 0.001, "menit": 60, "jam": 3600}
+
+    def _coba_kalimat_tunggu(self):
+        """Parse "tunggu 1 detik" / "tunggu 2 menit". None jika 'tunggu' dipakai biasa, mis. tunggu(1)."""
+        tok = self.saat_ini()
+        berikut = self.intip()
+        if berikut.tipe in (TokenType.KURUNG_BUKA, TokenType.KURANG):
+            if self._cari_penghubung(tuple(self._SATUAN_WAKTU), self.pos + 1) is None:
+                return None
+        elif berikut.tipe not in self._AWAL_NILAI:
+            return None
+        self.maju()  # tunggu
+        lama = self.parse_ekspresi()
+        faktor = 1
+        if self.periksa_kata(*self._SATUAN_WAKTU):
+            faktor = self._SATUAN_WAKTU[self.maju().nilai]
+        return NodeTunggu(lama, faktor, baris=tok.baris, kolom=tok.kolom)
+
     def _coba_kalimat_natural(self):
         """Parse kalimat seperti "tambahkan 1 ke skor". None jika bukan kalimat natural."""
         tok = self.saat_ini()
+        if tok.nilai == "tunggu":
+            return self._coba_kalimat_tunggu()
         penghubung = self._KALIMAT_NATURAL.get(tok.nilai)
         if penghubung is None:
             return None
@@ -440,13 +497,14 @@ class Parser:
     # ============================
 
     def parse_tampilkan(self):
-        tok = self.maju()  # TAMPILKAN
-        if self.periksa(TokenType.BARIS_BARU, TokenType.DEDENT, TokenType.EOF):
-            return NodeTampilkan([], baris=tok.baris, kolom=tok.kolom)  # baris kosong
-        args = [self.parse_ekspresi()]
-        while self.cocok(TokenType.KOMA):
+        tok = self.maju()  # TAMPILKAN (tampilkan / tulis / cetak)
+        baris_baru = tok.nilai != "cetak"  # 'cetak' tidak pindah baris
+        args = []
+        if not self.periksa(TokenType.BARIS_BARU, TokenType.DEDENT, TokenType.EOF):
             args.append(self.parse_ekspresi())
-        return NodeTampilkan(args, baris=tok.baris, kolom=tok.kolom)
+            while self.cocok(TokenType.KOMA):
+                args.append(self.parse_ekspresi())
+        return NodeTampilkan(args, baris=tok.baris, kolom=tok.kolom, baris_baru=baris_baru)
 
     # ============================
     # Kondisi
@@ -499,9 +557,9 @@ class Parser:
                 break
             if self.periksa(TokenType.KETIKA):
                 self.maju()
-                k_expr = self.parse_ekspresi()
+                nilai_kasus = self._parse_nilai_ketika()
                 blok = self.parse_blok()
-                kasus.append((k_expr, blok))
+                kasus.append((nilai_kasus, blok))
             elif self.periksa(TokenType.BAWAAN, TokenType.SELAINNYA):
                 self.maju()
                 bawaan = self.parse_blok()
@@ -512,14 +570,40 @@ class Parser:
             self.maju()
         return NodePilih(ekspresi, kasus, bawaan, baris=tok.baris, kolom=tok.kolom)
 
+    # Nilai yang boleh menyusul koma pada 'ketika "Sabtu", "Minggu"'. Selain ini, koma
+    # dianggap pembuka blok satu baris: 'ketika "Senin", tampilkan "Awal pekan"'.
+    _NILAI_SETELAH_KOMA = (
+        TokenType.ANGKA, TokenType.DESIMAL, TokenType.TEKS,
+        TokenType.BENAR, TokenType.SALAH, TokenType.KOSONG,
+    )
+
+    def _parse_nilai_ketika(self) -> list:
+        """'ketika "Sabtu" atau "Minggu"' / 'ketika "Sabtu", "Minggu"' → cocok dengan salah satunya."""
+        nilai = [self.parse_dan()]
+        while True:
+            if self.cocok(TokenType.ATAU):
+                nilai.append(self.parse_dan())
+            elif self.periksa(TokenType.KOMA) and self.intip().tipe in self._NILAI_SETELAH_KOMA:
+                self.maju()
+                nilai.append(self.parse_dan())
+            else:
+                return nilai
+
     # ============================
     # Perulangan
     # ============================
 
+    def _parse_blok_perulangan(self) -> list:
+        self._dalam_perulangan += 1
+        try:
+            return self.parse_blok()
+        finally:
+            self._dalam_perulangan -= 1
+
     def parse_selama(self):
         tok = self.maju()  # SELAMA
         kondisi = self.parse_ekspresi()
-        blok = self.parse_blok()
+        blok = self._parse_blok_perulangan()
         return NodeSelama(kondisi, blok, baris=tok.baris, kolom=tok.kolom)
 
     def parse_untuk(self):
@@ -532,7 +616,7 @@ class Parser:
         langkah = None
         if self.cocok(TokenType.LANGKAH):
             langkah = self.parse_ekspresi()
-        blok = self.parse_blok()
+        blok = self._parse_blok_perulangan()
         return NodeUntuk(nama, dari_expr, sampai_expr, langkah, blok, baris=tok.baris, kolom=tok.kolom)
 
     def parse_untuk_setiap(self):
@@ -540,7 +624,7 @@ class Parser:
         nama = self.harapkan(TokenType.IDENTIFIER).nilai
         self.harapkan(TokenType.DALAM)
         iterable = self.parse_ekspresi()
-        blok = self.parse_blok()
+        blok = self._parse_blok_perulangan()
         return NodeUntukSetiap(nama, iterable, blok, baris=tok.baris, kolom=tok.kolom)
 
     def parse_ulangi(self):
@@ -551,12 +635,12 @@ class Parser:
             if not self.periksa_kata("kali"):
                 self._error("Setelah 'ulangi <jumlah>' diharapkan kata 'kali'. Contoh: ulangi 3 kali: ...")
             self.maju()  # kali
-            blok = self.parse_blok()
+            blok = self._parse_blok_perulangan()
             return NodeUlangiKali(jumlah, blok, baris=tok.baris, kolom=tok.kolom)
 
         # ulangi: ... selama <kondisi>   (ulangi selama kondisi benar)
         # ulangi: ... sampai <kondisi>   (ulangi sampai kondisi menjadi benar)
-        blok = self.parse_blok()
+        blok = self._parse_blok_perulangan()
         self.lewati_baris_baru()
         if self.cocok(TokenType.SELAMA):
             kondisi = self.parse_ekspresi()
@@ -578,7 +662,14 @@ class Parser:
         self.harapkan(TokenType.KURUNG_BUKA)
         params = self._parse_parameter()
         self.harapkan(TokenType.KURUNG_TUTUP)
-        blok = self.parse_blok()
+        # berhenti/lewati di dalam fungsi tidak bisa menghentikan perulangan di luar fungsi
+        simpan_perulangan, self._dalam_perulangan = self._dalam_perulangan, 0
+        self._dalam_fungsi += 1
+        try:
+            blok = self.parse_blok()
+        finally:
+            self._dalam_fungsi -= 1
+            self._dalam_perulangan = simpan_perulangan
         return NodeFungsi(nama, params, blok, baris=tok.baris, kolom=tok.kolom)
 
     def _parse_parameter(self) -> list:
@@ -608,6 +699,8 @@ class Parser:
 
     def parse_kembalikan(self):
         tok = self.maju()  # KEMBALIKAN
+        if not self._dalam_fungsi:
+            self._error("'kembalikan' hanya bisa dipakai di dalam fungsi.", tok)
         ekspresi = None
         if not self.periksa(TokenType.BARIS_BARU, TokenType.DEDENT, TokenType.EOF):
             ekspresi = self.parse_ekspresi()
@@ -632,24 +725,39 @@ class Parser:
 
     def parse_impor(self):
         tok = self.maju()  # IMPOR
-        modul = self.harapkan(TokenType.IDENTIFIER).nilai
+        modul = self.harapkan(TokenType.IDENTIFIER, "Setelah 'impor' tulis nama modul, mis. impor matematika").nilai
+        tok_akhir = None
         while self.cocok(TokenType.TITIK):
-            modul += "." + self.harapkan(TokenType.IDENTIFIER).nilai
+            tok_akhir = self.saat_ini()
+            modul += "." + self._harapkan_nama_atribut()
         alias = None
         if self.cocok(TokenType.SEBAGAI):
             alias = self.harapkan(TokenType.IDENTIFIER).nilai
+        elif tok_akhir is not None and tok_akhir.tipe != TokenType.IDENTIFIER:
+            self._error(
+                f"'{tok_akhir.nilai}' adalah kata kunci, jadi perlu nama lain. "
+                f"Contoh: impor {modul} sebagai {tok_akhir.nilai}_saya",
+                tok_akhir,
+            )
         return NodeImpor(modul, alias, baris=tok.baris, kolom=tok.kolom)
 
     def parse_dari_impor(self):
         tok = self.maju()  # DARI
-        modul = self.harapkan(TokenType.IDENTIFIER).nilai
+        modul = self.harapkan(TokenType.IDENTIFIER, "Setelah 'dari' tulis nama modul, mis. dari acak impor bilangan").nilai
         while self.cocok(TokenType.TITIK):
-            modul += "." + self.harapkan(TokenType.IDENTIFIER).nilai
+            modul += "." + self._harapkan_nama_atribut()
         self.harapkan(TokenType.IMPOR)
-        nama = self.harapkan(TokenType.IDENTIFIER).nilai
+        tok_nama = self.saat_ini()
+        nama = self._harapkan_nama_atribut()  # boleh kata kunci asal diberi nama lain
         alias = None
         if self.cocok(TokenType.SEBAGAI):
             alias = self.harapkan(TokenType.IDENTIFIER).nilai
+        elif tok_nama.tipe != TokenType.IDENTIFIER:
+            self._error(
+                f"'{nama}' adalah kata kunci, jadi perlu nama lain. "
+                f"Contoh: dari {modul} impor {nama} sebagai {nama}_{modul}, atau pakai {modul}.{nama}(...)",
+                tok_nama,
+            )
         return NodeDariImpor(modul, nama, alias, baris=tok.baris, kolom=tok.kolom)
 
     # ============================
@@ -666,9 +774,15 @@ class Parser:
             tipe_error = None
             variabel = None
             if self.periksa(TokenType.IDENTIFIER):
-                tipe_error = self.maju().nilai
+                tok_jenis = self.maju()
+                tipe_error = tok_jenis.nilai
+                if tipe_error.lower() not in semua_nama_tangkap():
+                    self._error(self._pesan_jenis_kesalahan_asing(tipe_error), tok_jenis)
             if self.cocok(TokenType.SEBAGAI):
                 variabel = self.harapkan(TokenType.IDENTIFIER).nilai
+            elif tipe_error in NAMA_SEMUA_KESALAHAN:
+                # 'tangkap kesalahan:' — pesannya bisa dipakai lewat variabel 'kesalahan'
+                variabel = tipe_error
             blok = self.parse_blok()
             penangkap.append((tipe_error, variabel, blok))
             self.lewati_baris_baru()
@@ -676,6 +790,15 @@ class Parser:
         if self.cocok(TokenType.AKHIRNYA):
             blok_akhirnya = self.parse_blok()
         return NodeCoba(blok_coba, penangkap, blok_akhirnya, baris=tok.baris, kolom=tok.kolom)
+
+    @staticmethod
+    def _pesan_jenis_kesalahan_asing(nama: str) -> str:
+        dikenal = semua_nama_tangkap()
+        mirip = difflib.get_close_matches(nama.lower(), list(dikenal), n=1, cutoff=0.75)
+        if mirip:
+            return f"'{nama}' bukan jenis kesalahan yang dikenal. Maksud Anda '{dikenal[mirip[0]]}'?"
+        return (f"'{nama}' bukan jenis kesalahan yang dikenal. "
+                f"Untuk menyimpan pesan kesalahan ke variabel, tulis: tangkap sebagai {nama}")
 
     def parse_lempar(self):
         tok = self.maju()  # LEMPAR
@@ -891,10 +1014,41 @@ class Parser:
             self.maju()
             return NodeKosong(baris=tok.baris, kolom=tok.kolom)
 
+        # tanya "Siapa namamu?" / tanya angka "Berapa umurmu?" — harus dicek sebelum nama biasa.
+        # Hanya bila langsung diikuti teks, agar variabel bernama 'tanya' tetap aman.
+        teks = (TokenType.TEKS, TokenType.TEKS_FORMAT)
+        if tok.tipe == TokenType.IDENTIFIER and tok.nilai == "tanya" and (
+            self.intip().tipe in teks
+            or (self.intip().tipe == TokenType.IDENTIFIER and self.intip().nilai == "angka"
+                and self.intip(2).tipe in teks)
+        ):
+            self.maju()
+            jenis = "teks"
+            if self.periksa_kata("angka"):
+                self.maju()
+                jenis = "angka"
+            pertanyaan = self.parse_postfix()
+            return NodeTanya(pertanyaan, jenis, baris=tok.baris, kolom=tok.kolom)
+
         # Identifier
         if tok.tipe == TokenType.IDENTIFIER:
             self.maju()
             return NodeIdentifier(tok.nilai, baris=tok.baris, kolom=tok.kolom)
+
+        # jam sekarang / waktu sekarang / hari ini / tanggal hari ini / bulan ini / tahun ini
+        if tok.tipe == TokenType.WAKTU_SEKARANG:
+            self.maju()
+            return NodeWaktuSekarang(tok.nilai.split()[0], baris=tok.baris, kolom=tok.kolom)
+
+        # angka acak dari 1 sampai 6
+        if tok.tipe == TokenType.ANGKA_ACAK:
+            self.maju()
+            contoh = "Contoh: angka acak dari 1 sampai 6"
+            self.harapkan(TokenType.DARI, f"Setelah 'angka acak' diharapkan kata 'dari'. {contoh}")
+            minimum = self.parse_penjumlahan()
+            self.harapkan(TokenType.SAMPAI, f"Diharapkan kata 'sampai' untuk batas atas. {contoh}")
+            maksimum = self.parse_penjumlahan()
+            return NodeAngkaAcak(minimum, maksimum, baris=tok.baris, kolom=tok.kolom)
 
         # diri / super as identifier
         if tok.tipe in (TokenType.DIRI, TokenType.SUPER):

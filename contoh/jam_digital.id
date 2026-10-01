@@ -1,0 +1,35 @@
+# ==================================================
+# Cerita: Jam Digital Budi
+# Seluruh program ditulis seperti kalimat bahasa Indonesia biasa.
+# Jalankan: python indonesia.py contoh/jam_digital.id
+# ==================================================
+
+tampilkan "Budi menyalakan jam digital di mejanya."
+tampilkan "Sekarang pukul", waktu sekarang
+
+jika jam sekarang kurang dari 11, maka tampilkan "Jam itu menyapa: Selamat pagi, Budi!"
+atau jika jam sekarang kurang dari 15, maka tampilkan "Jam itu menyapa: Selamat siang, Budi!"
+atau jika jam sekarang kurang dari 18, maka tampilkan "Jam itu menyapa: Selamat sore, Budi!"
+jika tidak, tampilkan "Jam itu menyapa: Selamat malam, Budi!"
+
+# Budi memasang alarm lima detik lagi
+buat alarm adalah detik sekarang ditambah 5
+jika alarm paling sedikit 60, maka kurangi alarm dengan 60
+
+# Sayangnya, baterai jam hanya cukup untuk sepuluh detik
+buat baterai adalah 10
+tampilkan
+
+selama baterai lebih dari 0, lakukan:
+    buat suara adalah "tik"
+    jika detik sekarang tidak habis dibagi 2, maka ubah suara menjadi "tok"
+    tampilkan "   [", waktu sekarang, "]", suara
+
+    jika detik sekarang adalah alarm, maka tampilkan "   KRING! KRING! Waktunya minum air, Budi!"
+
+    tunggu 1 detik
+    kurangi baterai dengan 1
+
+tampilkan
+tampilkan "Baterai jam habis, layarnya pun padam."
+tampilkan "Budi tersenyum, lalu mengganti baterainya. Tamat."

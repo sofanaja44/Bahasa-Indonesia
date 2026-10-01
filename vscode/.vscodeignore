@@ -1,0 +1,5 @@
+node_modules/**
+tes/**
+bangun.py
+package-lock.json
+*.vsix

@@ -1,0 +1,14 @@
+untuk i dari 1 sampai 3:
+    cetak i
+tampilkan
+
+buat hasil adalah []
+untuk i dari 10 sampai 0 langkah -5 lakukan:
+    tambahkan i ke hasil
+tampilkan hasil
+
+untuk setiap buah dalam ["apel", "jeruk"], tampilkan buah
+untuk setiap huruf di dalam "abc", cetak huruf
+tampilkan
+untuk setiap kunci dalam {"a": 1, "b": 2}, cetak kunci
+tampilkan

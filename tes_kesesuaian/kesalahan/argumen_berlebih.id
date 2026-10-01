@@ -1,0 +1,3 @@
+fungsi sapa(nama):
+    tampilkan nama
+sapa("Budi", "Siti")

@@ -5,7 +5,7 @@
 
 # --- Variabel dan Konstanta ---
 buat nama = "Programmer Indonesia"
-tetap VERSI = 1.0
+tetap VERSI = "1.0"
 tampilkan format"Selamat datang, {nama}!"
 tampilkan format"Versi: {VERSI}"
 

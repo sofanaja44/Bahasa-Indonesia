@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <clipPath id="sudut"><rect width="512" height="512" rx="112"/></clipPath>
+  <g clip-path="url(#sudut)">
+    <rect width="512" height="512" fill="#ffffff"/>
+    <rect width="512" height="272" fill="#d7141a"/>
+    <path d="M120 84 L212 142 L120 200" fill="none" stroke="#ffffff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M250 200 H372" stroke="#ffffff" stroke-width="42" stroke-linecap="round"/>
+    <rect x="0.5" y="0.5" width="511" height="511" rx="112" fill="none" stroke="#000000" stroke-opacity="0.08" stroke-width="8"/>
+  </g>
+</svg>

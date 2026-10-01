@@ -1,0 +1,15 @@
+fungsi jenis_hari(hari):
+    pilih hari:
+        ketika "Sabtu" atau "Minggu":
+            kembalikan "libur"
+        ketika "Jumat", "Kamis":
+            kembalikan "hampir libur"
+        bawaan:
+            kembalikan "sekolah"
+
+tampilkan jenis_hari("Minggu"), jenis_hari("Kamis"), jenis_hari("Senin")
+
+pilih 3:
+    ketika 1: tampilkan "satu"
+    ketika 3, tampilkan "tiga"
+    selainnya: tampilkan "lain"

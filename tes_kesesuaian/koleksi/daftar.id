@@ -1,0 +1,12 @@
+buat buah adalah ["apel", "jeruk"]
+tambahkan "mangga" ke buah
+buah.tambahkan("durian")
+buah.hapus("jeruk")
+tampilkan buah, panjang(buah), buah[0], buah[-1], buah[1:3]
+tampilkan "apel" ada dalam buah, "nanas" tidak ada dalam buah
+buah.urutkan()
+tampilkan buah.gabung(", ")
+buat angka adalah [3, 1, 2]
+tampilkan jumlah(angka), maksimum(angka), minimum(angka), diurutkan(angka)
+angka[0] += 10
+tampilkan angka

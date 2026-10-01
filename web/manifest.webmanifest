@@ -1,0 +1,16 @@
+{
+  "name": "Editor Bahasa Pemrograman Indonesia",
+  "short_name": "Bahasa ID",
+  "description": "Tulis dan jalankan program dalam Bahasa Pemrograman Indonesia, juga tanpa internet.",
+  "lang": "id",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#d7141a",
+  "icons": [
+    { "src": "ikon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "ikon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "ikon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

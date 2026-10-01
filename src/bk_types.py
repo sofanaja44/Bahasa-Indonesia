@@ -3,7 +3,15 @@ bk_types.py — Tipe data native untuk bahasa pemrograman Indonesia.
 """
 
 from __future__ import annotations
+import string
 from typing import Any, Optional
+
+from src.errors import KesalahanIndeks, KesalahanKunci, KesalahanNilai, KesalahanTipe, nama_jenis
+
+
+def _teks(nilai) -> str:
+    from src.builtins import _ke_teks  # impor di sini agar tidak melingkar
+    return _ke_teks(nilai)
 
 
 # ============================================================
@@ -22,6 +30,17 @@ class SinyalBerhenti(Exception):
 class SinyalLewati(Exception):
     """Sinyal untuk continue dalam loop."""
     pass
+
+
+class TeksKesalahan(str):
+    """Isi variabel di 'tangkap sebagai e': pesan kesalahannya sebagai teks, plus e.pesan dan e.jenis."""
+
+    def __new__(cls, kesalahan: BaseException):
+        pesan = getattr(kesalahan, "pesan", None) or str(kesalahan)
+        obj = super().__new__(cls, pesan)
+        obj.pesan = pesan
+        obj.jenis = nama_jenis(kesalahan)
+        return obj
 
 
 # ============================================================
@@ -56,19 +75,34 @@ class BKDaftar:
         self.elemen.append(item)
 
     def hapus(self, item):
+        if item not in self.elemen:
+            raise KesalahanNilai(f"'{_teks(item)}' tidak ada di dalam daftar")
         self.elemen.remove(item)
 
     def hapusPosisi(self, indeks):
-        self.elemen.pop(indeks)
+        if isinstance(indeks, bool) or not isinstance(indeks, int):
+            raise KesalahanTipe(f"Posisi harus bilangan bulat, bukan '{_teks(indeks)}'")
+        if not -len(self.elemen) <= indeks < len(self.elemen):
+            raise KesalahanIndeks(f"Posisi {indeks} di luar batas daftar (panjangnya {len(self.elemen)})")
+        return self.elemen.pop(indeks)
 
     def sisipkan(self, indeks, item):
+        if isinstance(indeks, bool) or not isinstance(indeks, int):
+            raise KesalahanTipe(f"Posisi harus bilangan bulat, bukan '{_teks(indeks)}'")
         self.elemen.insert(indeks, item)
 
     def panjang(self):
         return len(self.elemen)
 
     def urutkan(self):
-        self.elemen.sort()
+        try:
+            self.elemen.sort()
+        except TypeError:
+            raise KesalahanTipe("Isi daftar tidak bisa diurutkan karena jenis datanya berbeda-beda")
+
+    def gabung(self, pemisah=" "):
+        """["apel", "jeruk"].gabung(", ") → "apel, jeruk"."""
+        return _teks(pemisah).join(_teks(e) for e in self.elemen)
 
     def balik(self):
         self.elemen.reverse()
@@ -82,16 +116,19 @@ class BKDaftar:
     def kosongkan(self):
         self.elemen.clear()
 
-    def metode(self, nama: str):
-        """Ambil method berdasarkan nama."""
-        metode_map = {
+    def semua_metode(self) -> dict:
+        return {
             "tambahkan": self.tambahkan, "hapus": self.hapus,
             "hapusPosisi": self.hapusPosisi, "sisipkan": self.sisipkan,
             "panjang": self.panjang, "urutkan": self.urutkan,
             "balik": self.balik, "cari": self.cari,
             "salin": self.salin, "kosongkan": self.kosongkan,
+            "gabung": self.gabung,
         }
-        return metode_map.get(nama)
+
+    def metode(self, nama: str):
+        """Ambil method berdasarkan nama."""
+        return self.semua_metode().get(nama)
 
 
 # ============================================================
@@ -106,6 +143,9 @@ class BKKamus:
 
     def __repr__(self):
         return str(self.data)
+
+    def __len__(self):
+        return len(self.data)  # kamus kosong bernilai salah, seperti daftar kosong
 
     def __contains__(self, key):
         return key in self.data
@@ -133,18 +173,77 @@ class BKKamus:
         return kunci in self.data
 
     def hapusKunci(self, kunci):
+        if kunci not in self.data:
+            raise KesalahanKunci(f"Kunci '{_teks(kunci)}' tidak ditemukan di kamus")
         del self.data[kunci]
 
     def dapatkan(self, kunci, default=None):
         return self.data.get(kunci, default)
 
-    def metode(self, nama: str):
-        metode_map = {
+    def semua_metode(self) -> dict:
+        return {
             "kunci": self.kunci, "nilai": self.nilai,
             "pasang": self.pasang, "adaKunci": self.adaKunci,
             "hapusKunci": self.hapusKunci, "dapatkan": self.dapatkan,
         }
-        return metode_map.get(nama)
+
+    def metode(self, nama: str):
+        return self.semua_metode().get(nama)
+
+
+# ============================================================
+# Metode teks: "halo".huruf_besar(), kalimat.belah(" "), ...
+# ============================================================
+
+def _pastikan_teks(nilai, nama_metode: str) -> str:
+    if not isinstance(nilai, str):
+        raise KesalahanTipe(f"Metode teks '{nama_metode}' membutuhkan teks, bukan '{_teks(nilai)}'")
+    return nilai
+
+
+def semua_metode_teks(teks: str) -> dict:
+    """Metode yang bisa dipanggil pada sebuah teks."""
+    return {
+        "panjang": lambda: len(teks),
+        "huruf_besar": lambda: teks.upper(),
+        "huruf_kecil": lambda: teks.lower(),
+        "huruf_awal_besar": lambda: string.capwords(teks),
+        "potong_spasi": lambda: teks.strip(),
+        "belah": lambda pemisah=None: BKDaftar(
+            teks.split(_pastikan_teks(pemisah, "belah") if pemisah is not None else None)
+        ),
+        "ganti": lambda lama, baru: teks.replace(_pastikan_teks(lama, "ganti"), _teks(baru)),
+        "berisi": lambda bagian: _pastikan_teks(bagian, "berisi") in teks,
+        "diawali": lambda awalan: teks.startswith(_pastikan_teks(awalan, "diawali")),
+        "diakhiri": lambda akhiran: teks.endswith(_pastikan_teks(akhiran, "diakhiri")),
+        "cari": lambda bagian: teks.find(_pastikan_teks(bagian, "cari")),
+        "balik": lambda: teks[::-1],
+        "berupa_angka": lambda: _teks_ke_angka(teks) is not None,
+        # Nama dari TASKS.md
+        "mulai_dengan": lambda awalan: teks.startswith(_pastikan_teks(awalan, "mulai_dengan")),
+        "akhir_dengan": lambda akhiran: teks.endswith(_pastikan_teks(akhiran, "akhir_dengan")),
+        "temukan": lambda bagian: teks.find(_pastikan_teks(bagian, "temukan")),
+    }
+
+
+def _teks_ke_angka(teks: str):
+    from src.builtins import teks_ke_angka  # impor di sini agar tidak melingkar
+    return teks_ke_angka(teks)
+
+
+# ============================================================
+# BKModul — modul pustaka standar (matematika, acak, ...)
+# ============================================================
+
+class BKModul:
+    """Modul yang dimuat dengan 'impor': isinya fungsi dan nilai."""
+
+    def __init__(self, nama: str, isi: dict):
+        self.nama = nama
+        self.isi = isi
+
+    def __repr__(self):
+        return f"<modul {self.nama}>"
 
 
 # ============================================================

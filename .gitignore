@@ -1,3 +1,17 @@
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# Editor web: hasil bangun dan unduhan Pyodide
+web/situs/
+web/.cache/
+web/node_modules/
+vscode/node_modules/
+*.vsix
+
+# Mesin Go
+*.test
+mesin/bin/
+mesin/*.prof
+mesin/*.out
+dist/

@@ -1,0 +1,82 @@
+=== metode_dasar
+buat t adalah "  Halo Dunia  "
+tampilkan t.panjang(), t.huruf_besar(), t.huruf_kecil(), t.potong_spasi()
+tampilkan "budi santoso".huruf_awal_besar(), "  banyak   spasi  di sini ".huruf_awal_besar(), "hURUF aCAK".huruf_awal_besar()
+tampilkan "a,b,,c".belah(","), "satu dua  tiga".belah(), "abc".belah("x"), "".belah(), "".belah(",")
+tampilkan "aaa".ganti("a", "b"), "abc".ganti("", "-"), "x".ganti("x", 5)
+tampilkan "halo".berisi("al"), "halo".diawali("ha"), "halo".diakhiri("lo")
+tampilkan "halo".cari("l"), "halo".cari("z"), "héllo".cari("l"), "halo".temukan("")
+tampilkan "abc".balik(), "12".berupa_angka(), "3,5".berupa_angka(), "x1".berupa_angka(), " 7 ".berupa_angka()
+tampilkan "halo".mulai_dengan("h"), "halo".akhir_dengan("o"), "1e5".berupa_angka(), "inf".berupa_angka()
+=== metode_unicode
+buat t adalah "Ñandú café ü"
+tampilkan t.panjang(), t.huruf_besar(), t.huruf_kecil(), t.balik(), t.cari("é"), t.huruf_awal_besar()
+=== metode_salah_nama
+"halo".huruf_besr()
+=== metode_argumen_salah
+tampilkan "halo".berisi(5)
+=== metode_belah_kosong
+tampilkan "abc".belah("")
+=== metode_jumlah_argumen
+tampilkan "abc".panjang(1)
+=== metode_ganti_kurang
+tampilkan "abc".ganti("a")
+=== metode_belah_kosong_none
+tampilkan "a b".belah(kosong)
+=== metode_belah_angka
+tampilkan "a b".belah(1)
+=== indeks_teks
+buat t adalah "halo"
+tampilkan t[0], t[-1], t[1:3], t[:2], t[2:], t[-3:-1], t[5:], t[3:1], t[benar]
+=== indeks_teks_luar
+buat t adalah "halo"
+tampilkan t[10]
+=== indeks_teks_desimal
+tampilkan "halo"[1.5]
+=== indeks_angka
+tampilkan 5[0]
+=== teks_iterasi
+untuk setiap h dalam "héllo":
+    cetak h + "|"
+tampilkan
+=== teks_format_lengkap
+buat a adalah 3
+buat b adalah [1, 2]
+tampilkan format"{a} + {a} = {a + a}; {b}; {b[0]}; {kosong}; {benar}; { a }; {}"
+tampilkan f"{a * 1.5} {a habis dibagi 3} {'teks'}"
+=== teks_format_galat
+tampilkan format"{a +}"
+=== teks_format_nama_salah
+buat nilai adalah 1
+tampilkan format"{nilia}"
+=== teks_format_kurung_tak_tutup
+buat nama adalah "x"
+tampilkan format"halo {nama"
+=== teks_format_lexer_galat
+tampilkan format"{1 $ 2}"
+=== teks_format_dalam_fungsi
+fungsi sapa(n):
+    kembalikan format"Halo {n}!"
+tampilkan sapa("Ani"), sapa(5)
+=== teks_escape
+tampilkan "a\tb", "a\\b", "kata \"kutip\"", 'satu \'dua\''
+=== teks_banyak_baris
+tampilkan "baris1\nbaris2"
+=== teks_ubah
+tampilkan ubah_teks(1.5), ubah_teks([1, "a"]), ubah_teks({"a": 1}), ubah_teks(kosong), ubah_teks(10.0 ** 100)
+=== teks_dalam
+tampilkan "a" ada dalam "abc", "z" tidak ada dalam "abc", "" ada dalam "abc"
+=== teks_dalam_angka
+tampilkan 1 ada dalam "abc"
+=== dalam_angka
+tampilkan 1 ada dalam 5
+=== gabung
+tampilkan ["a", 1, 2.5, benar].gabung(", "), [].gabung(), [1, 2].gabung(), [1, 2].gabung(kosong)
+=== teks_repl
+"halo"
+=== teks_kosong_repl
+""
+=== kosong_repl
+kosong
+=== logika_repl
+5 lebih dari 3

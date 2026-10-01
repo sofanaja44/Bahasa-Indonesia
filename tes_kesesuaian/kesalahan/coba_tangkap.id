@@ -1,0 +1,11 @@
+coba:
+    buat x adalah 10 dibagi 0
+tangkap KesalahanBagiNol sebagai pesan:
+    tampilkan "Tertangkap:", pesan
+akhirnya:
+    tampilkan "selesai"
+
+coba:
+    lempar Kesalahan("Umur tidak boleh negatif")
+tangkap sebagai pesan:
+    tampilkan pesan

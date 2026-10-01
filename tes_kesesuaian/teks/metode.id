@@ -1,0 +1,9 @@
+buat kalimat adalah "  selamat pagi indonesia  "
+buat rapi adalah kalimat.potong_spasi()
+tampilkan rapi.huruf_besar()
+tampilkan rapi.huruf_awal_besar()
+tampilkan rapi.belah()
+tampilkan "a-b-c".belah("-"), "halo".panjang(), "halo".balik()
+tampilkan rapi.ganti("pagi", "sore")
+tampilkan rapi.diawali("selamat"), rapi.diakhiri("dunia"), rapi.berisi("pagi"), rapi.cari("pagi")
+tampilkan "12".berupa_angka(), "3,5".berupa_angka(), "dua".berupa_angka()

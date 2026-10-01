@@ -533,6 +533,16 @@ class TestFrasaNatural:
         for kata in ("lebih", "kurang", "sama", "paling", "habis", "di", "sisa"):
             assert tipe_token(f"buat {kata} = 1")[1] == TokenType.IDENTIFIER
 
+    def test_waktu_sekarang(self):
+        assert tipe_token("buat jam adalah jam sekarang") == [
+            TokenType.BUAT, TokenType.IDENTIFIER, TokenType.ADALAH, TokenType.WAKTU_SEKARANG,
+        ]
+        assert nilai_token("tampilkan waktu sekarang")[1] == "waktu sekarang"
+
+    def test_satuan_tunggu_tetap_nama_biasa(self):
+        """'tunggu 1 detik': 'detik' tanpa 'sekarang' adalah kata biasa."""
+        assert tipe_token("tunggu 1 detik") == [TokenType.IDENTIFIER, TokenType.ANGKA, TokenType.IDENTIFIER]
+
     def test_frasa_tidak_menyeberang_baris(self):
         assert TokenType.SAMA_DENGAN_OP not in tipe_token("buat x = sama\ndengan = 1")
 

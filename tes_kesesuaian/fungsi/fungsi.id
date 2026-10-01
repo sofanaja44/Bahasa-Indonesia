@@ -1,0 +1,15 @@
+fungsi sapa(nama, sapaan = "Halo"):
+    kembalikan sapaan + ", " + nama + "!"
+
+tampilkan sapa("Budi")
+tampilkan sapa("Siti", "Selamat pagi")
+
+fungsi faktorial(n):
+    jika n paling banyak 1, maka kembalikan 1
+    kembalikan n dikali faktorial(n dikurangi 1)
+
+tampilkan faktorial(10)
+tampilkan panjang(ubah_teks(faktorial(200)))
+
+buat kuadrat adalah fungsi(x): kembalikan x dikali x
+tampilkan kuadrat(7)

@@ -4,19 +4,36 @@ interpreter.py — Tree-walking interpreter untuk bahasa pemrograman Indonesia.
 
 from __future__ import annotations
 import re
+import sys
 from typing import Any
 
 from src.ast_nodes import *
-from src.environment import Lingkungan
+from src.environment import Lingkungan, saran_nama
 from src.bk_types import (
-    BKDaftar, BKKamus, BKFungsi, BKKelas, BKInstansi, BKMetodeTerikat, BKInduk,
-    SinyalKembalikan, SinyalBerhenti, SinyalLewati,
+    BKDaftar, BKKamus, BKFungsi, BKKelas, BKInstansi, BKMetodeTerikat, BKInduk, BKModul,
+    SinyalKembalikan, SinyalBerhenti, SinyalLewati, semua_metode_teks, TeksKesalahan,
 )
-from src.builtins import daftar_fungsi_bawaan, _ke_teks
+from src.builtins import daftar_fungsi_bawaan, _ke_teks, _jenis, baca_waktu, tanya, tunggu
+from src.pustaka import MODUL, bilangan_acak, muat_modul
 from src.errors import (
     KesalahanIndonesia, KesalahanTipe, KesalahanBagiNol,
-    KesalahanIndeks, KesalahanNama, KesalahanNilai, KesalahanKunci,
+    KesalahanIndeks, KesalahanNama, KesalahanNilai, KesalahanKunci, KesalahanTumpukan, nama_tangkap,
 )
+
+# Bilangan bulat yang sangat panjang tetap boleh ditampilkan (Python membatasinya 4.300 digit).
+sys.set_int_max_str_digits(0)
+
+# Paling banyak sekian panggilan fungsi bertumpuk; lebih dari itu dianggap rekursi tak berujung.
+BATAS_REKURSI = 3000
+# Satu panggilan fungsi di bahasa ini memakai beberapa frame Python sekaligus.
+_FRAME_PYTHON_PER_PANGGILAN = 10
+
+
+def _dengan_lokasi(kesalahan: KesalahanIndonesia, node) -> KesalahanIndonesia:
+    """Tambahkan baris & kolom node bila kesalahan (mis. dari fungsi bawaan) belum punya lokasi."""
+    if kesalahan.baris is not None:
+        return kesalahan
+    return type(kesalahan)(kesalahan.pesan, baris=node.baris, kolom=node.kolom)
 
 
 class Interpreter:
@@ -24,13 +41,23 @@ class Interpreter:
 
     def __init__(self):
         self.global_env = Lingkungan(nama="global")
+        self.kedalaman = 0  # jumlah panggilan fungsi yang sedang bertumpuk
         # Daftarkan fungsi bawaan
         for nama, fungsi in daftar_fungsi_bawaan().items():
             self.global_env.definisikan(nama, fungsi)
 
     def jalankan(self, program: NodeProgram):
         """Jalankan seluruh program."""
-        return self._jalankan_blok(program.pernyataan, self.global_env)
+        batas_python = BATAS_REKURSI * _FRAME_PYTHON_PER_PANGGILAN + 1000
+        if sys.getrecursionlimit() < batas_python:
+            sys.setrecursionlimit(batas_python)
+        self.kedalaman = 0
+        try:
+            return self._jalankan_blok(program.pernyataan, self.global_env)
+        except RecursionError:
+            raise KesalahanTumpukan(
+                "Program bertumpuk terlalu dalam (mis. ekspresi atau rekursi yang sangat bersarang)"
+            ) from None
 
     def _jalankan_blok(self, blok: list, env: Lingkungan):
         hasil = None
@@ -80,7 +107,17 @@ class Interpreter:
         # I/O
         if isinstance(node, NodeTampilkan):
             args = [self._eval(e, env) for e in node.ekspresi_list]
-            print(" ".join(_ke_teks(a) for a in args))
+            teks = " ".join(_ke_teks(a) for a in args)
+            if node.baris_baru:
+                print(teks)
+            else:
+                print(teks, end="", flush=True)  # cetak: tetap di baris yang sama
+            return None
+        if isinstance(node, NodeTunggu):
+            try:
+                tunggu(self._eval(node.lama, env), node.faktor)
+            except KesalahanIndonesia as e:
+                raise _dengan_lokasi(e, node) from None
             return None
 
         # Kondisi
@@ -141,31 +178,94 @@ class Interpreter:
         if isinstance(node, NodeLempar):
             return self._eval_lempar(node, env)
 
-        # Modul (placeholder)
+        # Modul
         if isinstance(node, NodeImpor):
-            return None
+            return self._eval_impor(node, env)
         if isinstance(node, NodeDariImpor):
-            return None
+            return self._eval_dari_impor(node, env)
+
+        # Waktu, angka acak, dan masukan (jarang dipakai, jadi diperiksa paling akhir)
+        if isinstance(node, NodeWaktuSekarang):
+            return baca_waktu(node.bagian)
+        if isinstance(node, NodeAngkaAcak):
+            try:
+                return bilangan_acak(self._eval(node.minimum, env), self._eval(node.maksimum, env))
+            except KesalahanIndonesia as e:
+                raise _dengan_lokasi(e, node) from None
+        if isinstance(node, NodeTanya):
+            try:
+                return tanya(self._eval(node.pertanyaan, env), node.jenis)
+            except KesalahanIndonesia as e:
+                raise _dengan_lokasi(e, node) from None
 
         raise KesalahanTipe(f"Node tidak dikenal: {nama_kelas}")
+
+    # ============================
+    # Modul (impor)
+    # ============================
+
+    def _muat_modul(self, nama: str, node) -> BKModul:
+        if nama not in MODUL:
+            daftar = ", ".join(MODUL)
+            raise KesalahanNama(
+                f"Modul '{nama}' tidak ada.{saran_nama(nama, MODUL)} Modul yang tersedia: {daftar}",
+                baris=node.baris, kolom=node.kolom,
+            )
+        return muat_modul(nama)
+
+    def _isi_modul(self, modul: BKModul, nama: str, node):
+        if nama not in modul.isi:
+            raise KesalahanNama(
+                f"Modul '{modul.nama}' tidak memiliki '{nama}'.{saran_nama(nama, modul.isi)}",
+                baris=node.baris, kolom=node.kolom,
+            )
+        return modul.isi[nama]
+
+    def _eval_impor(self, node: NodeImpor, env: Lingkungan):
+        """impor matematika / impor matematika sebagai m / impor matematika.akar sebagai akar"""
+        nama_modul, *bagian = node.modul.split(".")
+        nilai = self._muat_modul(nama_modul, node)
+        for sebelumnya, nama in zip([nama_modul, *bagian], bagian):
+            if not isinstance(nilai, BKModul):
+                raise KesalahanNama(f"'{sebelumnya}' bukan modul, jadi tidak punya '{nama}'",
+                                    baris=node.baris, kolom=node.kolom)
+            nilai = self._isi_modul(nilai, nama, node)
+        if node.alias:
+            env.definisikan(node.alias, nilai)
+        elif bagian:
+            env.definisikan(bagian[-1], nilai)
+        else:
+            env.definisikan(nama_modul, nilai)
+        return None
+
+    def _eval_dari_impor(self, node: NodeDariImpor, env: Lingkungan):
+        """dari matematika impor akar / dari acak impor bilangan sebagai dadu"""
+        modul = self._muat_modul(node.modul, node)
+        env.definisikan(node.alias or node.nama, self._isi_modul(modul, node.nama, node))
+        return None
 
     # ============================
     # Format Teks (format"...")
     # ============================
 
     def _eval_format_teks(self, node: NodeTeksFormat, env: Lingkungan) -> str:
+        from src.lexer import tokenisasi
+        from src.parser import Parser
         template = node.template
-        def ganti(match):
-            expr_str = match.group(1).strip()
-            from src.lexer import tokenisasi
-            from src.parser import Parser
+        # Perulangan biasa (bukan re.sub dengan callback) agar rekursi di dalam {...}
+        # tidak menumpuk di tumpukan C Python.
+        bagian, akhir_sebelumnya = [], 0
+        for cocok in re.finditer(r"\{([^}]+)\}", template):
+            bagian.append(template[akhir_sebelumnya:cocok.start()])
+            expr_str = cocok.group(1).strip()
             tokens = tokenisasi(expr_str)
-            if len(tokens) == 1:  # hanya EOF, mis. "{ }"
-                return ""
-            # Dibaca sebagai ekspresi, bukan perintah: "{x adalah 5}" membandingkan, tidak mengisi
-            ekspresi = Parser(tokens, expr_str).parse_ekspresi_tunggal()
-            return _ke_teks(self._eval(ekspresi, env))
-        return re.sub(r"\{([^}]+)\}", ganti, template)
+            if len(tokens) > 1:  # "{ }" (hanya EOF) menjadi teks kosong
+                # Dibaca sebagai ekspresi, bukan perintah: "{x adalah 5}" membandingkan, tidak mengisi
+                ekspresi = Parser(tokens, expr_str).parse_ekspresi_tunggal()
+                bagian.append(_ke_teks(self._eval(ekspresi, env)))
+            akhir_sebelumnya = cocok.end()
+        bagian.append(template[akhir_sebelumnya:])
+        return "".join(bagian)
 
     # ============================
     # Operasi biner
@@ -208,10 +308,17 @@ class Interpreter:
                     raise KesalahanBagiNol("Tidak bisa membagi dengan nol", baris=node.baris, kolom=node.kolom)
                 return kiri / kanan
             if op == "%":
+                if isinstance(kiri, str):
+                    raise TypeError  # bukan pemformatan teks ala Python
                 if kanan == 0:
                     raise KesalahanBagiNol("Tidak bisa membagi dengan nol", baris=node.baris, kolom=node.kolom)
                 return kiri % kanan
-            if op == "**": return kiri ** kanan
+            if op == "**":
+                hasil = kiri ** kanan
+                if isinstance(hasil, complex):
+                    raise KesalahanNilai("Pangkat pecahan dari bilangan negatif tidak bisa dihitung",
+                                         baris=node.baris, kolom=node.kolom)
+                return hasil
             if op == "==": return kiri == kanan
             if op == "!=": return kiri != kanan
             if op == ">": return kiri > kanan
@@ -225,12 +332,19 @@ class Interpreter:
                 f"Tipe data tidak cocok untuk operasi '{op}': {_ke_teks(kiri)} dan {_ke_teks(kanan)}",
                 baris=node.baris, kolom=node.kolom,
             )
+        except ZeroDivisionError:
+            raise KesalahanBagiNol("Tidak bisa membagi dengan nol", baris=node.baris, kolom=node.kolom) from None
+        except (OverflowError, MemoryError):
+            raise KesalahanNilai("Hasil perhitungan terlalu besar", baris=node.baris, kolom=node.kolom) from None
 
         raise KesalahanTipe(f"Operator tidak dikenal: '{op}'", baris=node.baris)
 
     def _eval_unari(self, node: NodeOperasiUnari, env: Lingkungan):
         operand = self._eval(node.operand, env)
         if node.operator == "-":
+            if isinstance(operand, bool) or not isinstance(operand, (int, float)):
+                raise KesalahanTipe(f"Tanda minus hanya untuk angka, bukan '{_ke_teks(operand)}'",
+                                    baris=node.baris, kolom=node.kolom)
             return -operand
         if node.operator == "bukan":
             return not operand
@@ -256,7 +370,7 @@ class Interpreter:
         try:
             if tipe == "bilangan": return int(nilai) if not isinstance(nilai, bool) else int(nilai)
             if tipe == "desimal": return float(nilai)
-            if tipe == "teks": return str(nilai)
+            if tipe == "teks": return _ke_teks(nilai)  # "benar", bukan "True"
             if tipe == "logika": return bool(nilai)
         except (ValueError, TypeError):
             raise KesalahanTipe(f"Tidak bisa mengubah nilai ke tipe '{tipe}'", baris=baris, kolom=kolom)
@@ -330,10 +444,11 @@ class Interpreter:
 
     def _eval_pilih(self, node: NodePilih, env: Lingkungan):
         nilai = self._eval(node.ekspresi, env)
-        for kasus_expr, blok in node.kasus:
-            kasus_val = self._eval(kasus_expr, env)
-            if nilai == kasus_val:
-                return self._jalankan_blok(blok, env.anak("ketika"))
+        for daftar_nilai, blok in node.kasus:
+            # ketika "Sabtu" atau "Minggu": cocok bila sama dengan salah satunya
+            for kasus_expr in daftar_nilai:
+                if nilai == self._eval(kasus_expr, env):
+                    return self._jalankan_blok(blok, env.anak("ketika"))
         if node.bawaan is not None:
             return self._jalankan_blok(node.bawaan, env.anak("bawaan"))
         return None
@@ -356,6 +471,10 @@ class Interpreter:
         dari = self._eval(node.dari_expr, env)
         sampai = self._eval(node.sampai_expr, env)
         langkah = self._eval(node.langkah_expr, env) if node.langkah_expr else 1
+        for bagian, nilai in (("dari", dari), ("sampai", sampai), ("langkah", langkah)):
+            if isinstance(nilai, bool) or not isinstance(nilai, (int, float)):
+                raise KesalahanTipe(f"Nilai '{bagian}' pada perulangan 'untuk' harus angka, bukan '{_ke_teks(nilai)}'",
+                                    baris=node.baris, kolom=node.kolom)
         i = dari
         while (langkah > 0 and i <= sampai) or (langkah < 0 and i >= sampai):
             loop_env = env.anak("untuk")
@@ -376,7 +495,12 @@ class Interpreter:
                 f"'untuk setiap' hanya bisa menelusuri daftar, kamus, atau teks, bukan '{_ke_teks(iterable)}'",
                 baris=node.baris, kolom=node.kolom,
             )
-        items = iterable.elemen if isinstance(iterable, BKDaftar) else iterable
+        if isinstance(iterable, BKDaftar):
+            items = iterable.elemen
+        elif isinstance(iterable, BKKamus):
+            items = list(iterable.data)  # kamus boleh diubah selama ditelusuri
+        else:
+            items = iterable
         for item in items:
             loop_env = env.anak("untuk_setiap")
             loop_env.definisikan(node.variabel, item)
@@ -435,10 +559,19 @@ class Interpreter:
         if callable(callee) and not isinstance(callee, (BKFungsi, BKKelas, BKMetodeTerikat)):
             try:
                 return callee(*args)
-            except KesalahanIndonesia:
-                raise
-            except Exception as e:
-                raise KesalahanNilai(str(e), baris=node.baris, kolom=node.kolom)
+            except KesalahanIndonesia as e:
+                raise _dengan_lokasi(e, node) from None
+            except TypeError:
+                # Biasanya jumlah argumen salah, mis. mutlak(1, 2)
+                raise KesalahanTipe(
+                    f"'{self._nama_pemanggilan(node.fungsi)}' dipanggil dengan argumen yang tidak sesuai",
+                    baris=node.baris, kolom=node.kolom,
+                ) from None
+            except (ValueError, ArithmeticError, LookupError, OSError) as e:
+                raise KesalahanNilai(
+                    f"'{self._nama_pemanggilan(node.fungsi)}' tidak bisa menghitung dengan nilai ini",
+                    baris=node.baris, kolom=node.kolom,
+                ) from e
 
         # User-defined function
         if isinstance(callee, BKFungsi):
@@ -457,25 +590,62 @@ class Interpreter:
             baris=node.baris, kolom=node.kolom,
         )
 
-    def _panggil_fungsi(self, fungsi: BKFungsi, args: list, node) -> Any:
-        func_env = fungsi.lingkungan.anak(fungsi.nama)
-        # Bind parameters
-        for i, (param_nama, default) in enumerate(fungsi.parameter):
+    @staticmethod
+    def _nama_pemanggilan(node) -> str:
+        """Nama yang dipanggil untuk pesan kesalahan: 'akar', 'matematika.akar', ..."""
+        if isinstance(node, NodeIdentifier):
+            return node.nama
+        if isinstance(node, NodeAksesAtribut):
+            return f"{Interpreter._nama_pemanggilan(node.objek)}.{node.atribut}"
+        return "fungsi"
+
+    def _ikat_parameter(self, fungsi: BKFungsi, args: list, func_env: Lingkungan, node, metode: bool = False):
+        """Isi parameter fungsi dengan argumen; pada metode, parameter 'diri' dilewati."""
+        parameter = [(nama, bawaan) for nama, bawaan in fungsi.parameter if not (metode and nama == "diri")]
+        if len(args) > len(parameter):
+            raise KesalahanTipe(
+                f"Fungsi '{fungsi.nama}' menerima {len(parameter)} argumen, tetapi diberi {len(args)}",
+                baris=node.baris, kolom=node.kolom,
+            )
+        for i, (nama, bawaan) in enumerate(parameter):
             if i < len(args):
-                func_env.definisikan(param_nama, args[i])
-            elif default is not None:
-                val = self._eval(default, fungsi.lingkungan)
-                func_env.definisikan(param_nama, val)
+                func_env.definisikan(nama, args[i])
+            elif bawaan is not None:
+                func_env.definisikan(nama, self._eval(bawaan, fungsi.lingkungan))
             else:
                 raise KesalahanNilai(
-                    f"Fungsi '{fungsi.nama}' membutuhkan parameter '{param_nama}'",
+                    f"Fungsi '{fungsi.nama}' membutuhkan parameter '{nama}'",
                     baris=node.baris, kolom=node.kolom,
                 )
+
+    def _jalankan_isi_fungsi(self, fungsi: BKFungsi, func_env: Lingkungan, node) -> Any:
+        if self.kedalaman >= BATAS_REKURSI:
+            batas = f"{BATAS_REKURSI:,}".replace(",", ".")
+            raise KesalahanTumpukan(
+                f"Fungsi '{fungsi.nama}' dipanggil bertumpuk lebih dari {batas} kali. "
+                "Mungkin fungsi ini terus memanggil dirinya sendiri tanpa berhenti; "
+                "pastikan ada kondisi untuk berhenti.",
+                baris=node.baris, kolom=node.kolom,
+            )
+        self.kedalaman += 1
         try:
             self._jalankan_blok(fungsi.blok, func_env)
         except SinyalKembalikan as ret:
             return ret.nilai
+        except (KesalahanIndonesia, RecursionError, KeyboardInterrupt) as e:
+            # Traceback Python kesalahan ini tidak pernah ditampilkan. Tanpa dipotong di setiap
+            # tingkat, rekursi yang gagal membawa traceback puluhan ribu frame; membebaskannya
+            # sekaligus menghabiskan tumpukan WebAssembly di editor browser (Pyodide).
+            e.__traceback__ = None
+            raise
+        finally:
+            self.kedalaman -= 1
         return None
+
+    def _panggil_fungsi(self, fungsi: BKFungsi, args: list, node) -> Any:
+        func_env = fungsi.lingkungan.anak(fungsi.nama)
+        self._ikat_parameter(fungsi, args, func_env, node)
+        return self._jalankan_isi_fungsi(fungsi, func_env, node)
 
     def _panggil_metode(self, metode: BKMetodeTerikat, args: list, node) -> Any:
         func_env = metode.fungsi.lingkungan.anak(metode.fungsi.nama)
@@ -486,22 +656,8 @@ class Interpreter:
             induk = BKInduk(metode.instansi, kelas_pemilik.induk)
             func_env.definisikan("induk", induk)
             func_env.definisikan("super", induk)
-        for i, (param_nama, default) in enumerate(metode.fungsi.parameter):
-            if param_nama == "diri":
-                continue
-            idx = i
-            # Skip 'diri' parameter in counting
-            arg_idx = idx if metode.fungsi.parameter[0][0] != "diri" else idx - 1
-            if arg_idx >= 0 and arg_idx < len(args):
-                func_env.definisikan(param_nama, args[arg_idx])
-            elif default is not None:
-                val = self._eval(default, metode.fungsi.lingkungan)
-                func_env.definisikan(param_nama, val)
-        try:
-            self._jalankan_blok(metode.fungsi.blok, func_env)
-        except SinyalKembalikan as ret:
-            return ret.nilai
-        return None
+        self._ikat_parameter(metode.fungsi, args, func_env, node, metode=True)
+        return self._jalankan_isi_fungsi(metode.fungsi, func_env, node)
 
     # ============================
     # OOP
@@ -541,6 +697,11 @@ class Interpreter:
         if init:
             metode = BKMetodeTerikat(instansi, init)
             self._panggil_metode(metode, args, node)
+        elif args:
+            raise KesalahanTipe(
+                f"Kelas '{kelas.nama}' tidak punya fungsi 'inisialisasi', jadi tidak menerima argumen",
+                baris=node.baris, kolom=node.kolom,
+            )
         return instansi
 
     # ============================
@@ -556,13 +717,20 @@ class Interpreter:
         except IndexError:
             raise KesalahanIndeks(f"Indeks {idx} di luar batas daftar", baris=node.baris, kolom=node.kolom)
         except KeyError:
-            raise KesalahanKunci(f"Kunci '{idx}' tidak ditemukan", baris=node.baris, kolom=node.kolom)
-        raise KesalahanTipe("Tidak bisa mengakses indeks pada tipe ini", baris=node.baris)
+            raise KesalahanKunci(f"Kunci '{_ke_teks(idx)}' tidak ditemukan", baris=node.baris, kolom=node.kolom)
+        except TypeError:
+            raise KesalahanTipe(f"Indeks {_jenis(obj)} harus berupa bilangan bulat, bukan '{_ke_teks(idx)}'",
+                                baris=node.baris, kolom=node.kolom)
+        raise KesalahanTipe(f"Tidak bisa mengambil isi dengan indeks dari {_jenis(obj)}", baris=node.baris)
 
     def _eval_irisan(self, node: NodeIrisanDaftar, env: Lingkungan):
         obj = self._eval(node.objek, env)
         awal = self._eval(node.awal, env) if node.awal else None
         akhir = self._eval(node.akhir, env) if node.akhir else None
+        for batas in (awal, akhir):
+            if batas is not None and (isinstance(batas, bool) or not isinstance(batas, int)):
+                raise KesalahanTipe(f"Batas irisan harus bilangan bulat, bukan '{_ke_teks(batas)}'",
+                                    baris=node.baris, kolom=node.kolom)
         if isinstance(obj, BKDaftar):
             return BKDaftar(obj.elemen[awal:akhir])
         if isinstance(obj, str):
@@ -574,10 +742,14 @@ class Interpreter:
         nama = node.atribut
 
         if isinstance(obj, BKInstansi):
+            if nama in obj.atribut:  # termasuk atribut yang bernilai kosong
+                return obj.atribut[nama]
             val = obj.dapatkan(nama)
             if val is not None:
                 return val
-            raise KesalahanNama(f"Atribut '{nama}' tidak ditemukan pada {obj.kelas.nama}", baris=node.baris)
+            kandidat = set(obj.atribut) | self._nama_metode_kelas(obj.kelas)
+            raise KesalahanNama(f"Atribut '{nama}' tidak ditemukan pada {obj.kelas.nama}.{saran_nama(nama, kandidat)}",
+                                baris=node.baris, kolom=node.kolom)
 
         if isinstance(obj, BKInduk):
             val = obj.dapatkan(nama)
@@ -585,22 +757,30 @@ class Interpreter:
                 return val
             raise KesalahanNama(f"Kelas induk {obj.kelas.nama} tidak memiliki metode '{nama}'", baris=node.baris)
 
-        if isinstance(obj, BKDaftar):
-            m = obj.metode(nama)
-            if m is not None:
-                return m
-            raise KesalahanNama(f"Daftar tidak memiliki metode '{nama}'", baris=node.baris)
+        if isinstance(obj, BKModul):
+            return self._isi_modul(obj, nama, node)
 
-        if isinstance(obj, BKKamus):
-            m = obj.metode(nama)
-            if m is not None:
-                return m
-            raise KesalahanNama(f"Kamus tidak memiliki metode '{nama}'", baris=node.baris)
+        if isinstance(obj, TeksKesalahan) and nama in ("pesan", "jenis"):
+            return getattr(obj, nama)
 
-        if isinstance(obj, str):
-            raise KesalahanNama(f"Teks tidak memiliki metode '{nama}'", baris=node.baris)
+        if isinstance(obj, (BKDaftar, BKKamus, str)):
+            semua = semua_metode_teks(obj) if isinstance(obj, str) else obj.semua_metode()
+            if nama in semua:
+                return semua[nama]
+            raise KesalahanNama(
+                f"{_jenis(obj).capitalize()} tidak memiliki metode '{nama}'.{saran_nama(nama, semua)}",
+                baris=node.baris, kolom=node.kolom,
+            )
 
-        raise KesalahanTipe(f"Tidak bisa mengakses atribut '{nama}'", baris=node.baris)
+        raise KesalahanTipe(f"Tidak bisa mengakses atribut '{nama}' pada {_jenis(obj)}", baris=node.baris)
+
+    @staticmethod
+    def _nama_metode_kelas(kelas: BKKelas) -> set:
+        nama = set()
+        while kelas is not None:
+            nama.update(kelas.metode)
+            kelas = kelas.induk
+        return nama
 
     # ============================
     # Error handling
@@ -609,17 +789,15 @@ class Interpreter:
     def _eval_coba(self, node: NodeCoba, env: Lingkungan):
         try:
             return self._jalankan_blok(node.blok_coba, env.anak("coba"))
-        except SinyalKembalikan:
-            raise
+        except (SinyalKembalikan, SinyalBerhenti, SinyalLewati):
+            raise  # kembalikan/berhenti/lewati di dalam 'coba' bukan kesalahan
         except Exception as e:
             for tipe_error, variabel, blok in node.penangkap:
-                # Match error type if specified
-                if tipe_error and not type(e).__name__.endswith(tipe_error) and tipe_error != type(e).__name__:
+                if tipe_error and tipe_error.lower() not in nama_tangkap(type(e)):
                     continue
                 catch_env = env.anak("tangkap")
                 if variabel:
-                    err_msg = e.pesan if hasattr(e, 'pesan') else str(e)
-                    catch_env.definisikan(variabel, err_msg)
+                    catch_env.definisikan(variabel, TeksKesalahan(e))
                 return self._jalankan_blok(blok, catch_env)
             raise
         finally:

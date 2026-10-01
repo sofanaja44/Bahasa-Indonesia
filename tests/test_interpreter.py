@@ -12,7 +12,8 @@ from src.lexer import tokenisasi
 from src.parser import parse
 from src.errors import (
     KesalahanNama, KesalahanTipe, KesalahanBagiNol,
-    KesalahanIndeks, KesalahanNilai,
+    KesalahanIndeks, KesalahanNilai, KesalahanIndonesia, KesalahanBerkas, KesalahanTumpukan,
+    KesalahanSintaks,
 )
 from src.bk_types import BKDaftar, BKKamus
 
@@ -424,6 +425,52 @@ class TestErrorHandling:
         )
         assert tangkap_output(kode) == "Tertangkap"
 
+    def test_tangkap_kesalahan_menangkap_semua(self):
+        kode = 'coba:\n    tampilkan tidak_ada\ntangkap Kesalahan:\n    tampilkan "tertangkap"'
+        assert tangkap_output(kode) == "tertangkap"
+
+    def test_tangkap_kesalahan_huruf_kecil_menyimpan_pesan(self):
+        kode = 'coba:\n    buat x = 1 / 0\ntangkap kesalahan:\n    tampilkan "Ups:", kesalahan'
+        assert tangkap_output(kode) == "Ups: Tidak bisa membagi dengan nol"
+
+    def test_contoh_prd_nama_python(self):
+        kode = (
+            "coba:\n    buat hasil = 10 / 0\n"
+            "tangkap ZeroDivisionError sebagai e:\n    tampilkan \"Error: Tidak bisa dibagi nol!\"\n"
+            "tangkap sebagai e:\n    tampilkan \"Error tidak diketahui: \" + e.pesan\n"
+            "akhirnya:\n    tampilkan \"Selesai dieksekusi\""
+        )
+        assert tangkap_output(kode) == "Error: Tidak bisa dibagi nol!\nSelesai dieksekusi"
+
+    def test_pesan_dan_jenis_kesalahan(self):
+        kode = (
+            'coba:\n    lempar "Baterai habis"\n'
+            'tangkap sebagai e:\n    tampilkan e.pesan, "|", e.jenis, "|", e.huruf_besar()'
+        )
+        assert tangkap_output(kode) == "Baterai habis | KesalahanNilai | BATERAI HABIS"
+
+    def test_jenis_tidak_cocok_diteruskan(self):
+        kode = "coba:\n    buat x = 1 / 0\ntangkap KesalahanNama:\n    tampilkan 1"
+        with pytest.raises(KesalahanBagiNol):
+            jalankan_kode(kode)
+
+    def test_penangkap_pertama_yang_cocok_dipakai(self):
+        kode = (
+            "coba:\n    tampilkan [1][5]\n"
+            "tangkap KesalahanBagiNol:\n    tampilkan \"bagi\"\n"
+            "tangkap kesalahanindeks:\n    tampilkan \"indeks\"\n"
+            "tangkap:\n    tampilkan \"lain\""
+        )
+        assert tangkap_output(kode) == "indeks"
+
+    @pytest.mark.parametrize("kode, potongan", [
+        ("coba:\n    tampilkan 1\ntangkap e:\n    tampilkan e", "tulis: tangkap sebagai e"),
+        ("coba:\n    tampilkan 1\ntangkap KesalahanBagiNoll:\n    tampilkan 2", "Maksud Anda 'KesalahanBagiNol'?"),
+    ])
+    def test_jenis_kesalahan_tidak_dikenal(self, kode, potongan):
+        with pytest.raises(KesalahanSintaks, match=potongan):
+            jalankan_kode(kode)
+
 
 # ============================================================
 # Built-in Functions
@@ -609,7 +656,7 @@ class TestGayaNaturalNilai:
             "bagi uang dengan 2\n"
             "tampilkan uang"
         )
-        assert tangkap_output(kode) == "90.0"
+        assert tangkap_output(kode) == "90"  # desimal bulat tampil tanpa .0
 
     def test_kalimat_pada_atribut_objek(self):
         kode = (
@@ -801,16 +848,337 @@ class TestPerbaikanBug:
 
 
 # ============================================================
+# Fungsi waktu
+# ============================================================
+
+@pytest.fixture
+def jam_palsu(monkeypatch):
+    """Jam palsu mulai 23:59:57 yang maju hanya ketika program 'tunggu'."""
+    import datetime as dt
+
+    sekarang = [dt.datetime(2026, 1, 1, 23, 59, 57)]
+
+    class WaktuPalsu(dt.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return sekarang[0]
+
+    def tidur(detik):
+        sekarang[0] += dt.timedelta(seconds=detik)
+
+    monkeypatch.setattr("src.builtins.datetime", WaktuPalsu)
+    monkeypatch.setattr("time.sleep", tidur)
+    return sekarang
+
+
+class TestWaktu:
+    def test_jam_menit_detik_sekarang(self, jam_palsu):
+        assert tangkap_output("tampilkan jam sekarang, menit sekarang, detik sekarang") == "23 59 57"
+
+    def test_waktu_sekarang_dua_digit(self, jam_palsu):
+        assert tangkap_output("tunggu 3 detik\ntampilkan waktu sekarang") == "00:00:00"
+
+    def test_waktu_dalam_kondisi(self, jam_palsu):
+        assert tangkap_output('jika jam sekarang paling sedikit 18, maka tampilkan "malam"') == "malam"
+
+    def test_tunggu_dengan_satuan(self, monkeypatch):
+        dicatat = []
+        monkeypatch.setattr("time.sleep", dicatat.append)
+        jalankan_kode("tunggu 2 detik\ntunggu 1 menit\ntunggu 500 milidetik\ntunggu 3\nbuat jeda adalah 4\ntunggu jeda detik")
+        assert dicatat == [2, 60, pytest.approx(0.5), 3, 4]
+
+    def test_tunggu_sebagai_fungsi_tetap_bisa(self, monkeypatch):
+        dicatat = []
+        monkeypatch.setattr("time.sleep", dicatat.append)
+        jalankan_kode("tunggu(1)\ntunggu(0.5)")
+        assert dicatat == [1, 0.5]
+
+    def test_tunggu_negatif_error(self):
+        with pytest.raises(KesalahanNilai, match="negatif"):
+            jalankan_kode("tunggu -1 detik")
+
+    def test_tunggu_bukan_angka_error(self):
+        with pytest.raises(KesalahanNilai, match="angka"):
+            jalankan_kode('tunggu "sebentar"')
+
+    def test_jam_digital_berganti_hari(self, jam_palsu):
+        """Contoh jam digital: sapaan malam, 23:59:59 ke 00:00:00, dan alarm lima detik kemudian."""
+        output = tangkap_output((FOLDER_CONTOH / "jam_digital.id").read_text(encoding="utf-8"))
+        assert "Selamat malam, Budi!" in output
+        assert "[ 23:59:59 ] tok" in output
+        assert "[ 00:00:00 ] tik" in output
+        assert "[ 00:00:02 ] tik\n   KRING!" in output
+        assert "[ 00:00:06 ] tik" in output
+        assert "Baterai jam habis" in output
+
+
+# ============================================================
 # Semua program contoh harus berjalan tanpa error
 # ============================================================
 
 FOLDER_CONTOH = Path(__file__).resolve().parent.parent / "contoh"
 
 
-@pytest.mark.parametrize("berkas", sorted(FOLDER_CONTOH.glob("*.id")), ids=lambda p: p.name)
-def test_program_contoh_berjalan(berkas):
-    kode = berkas.read_text(encoding="utf-8")
+# Jawaban untuk program contoh yang interaktif
+JAWABAN_CONTOH = {"tebak_angka.id": ["50", "25", "42"]}
+
+
+def _main_contoh(berkas, monkeypatch, jawaban):
+    """Jalankan program contoh dengan jawaban palsu dan angka acak yang selalu 42."""
+    sisa = list(jawaban)
+
+    def masukan_palsu(pertanyaan=""):
+        print(pertanyaan, end="")
+        if not sisa:
+            raise EOFError
+        return sisa.pop(0)
+
+    monkeypatch.setattr("time.sleep", lambda detik: None)  # jam_digital.id tidak perlu benar-benar menunggu
+    monkeypatch.setattr("random.randint", lambda a, b: 42 if a <= 42 <= b else a)
+    monkeypatch.setattr("builtins.input", masukan_palsu)
     buf = StringIO()
     with redirect_stdout(buf):
-        jalankan_kode(kode)
-    assert buf.getvalue().strip()
+        jalankan_kode(berkas.read_text(encoding="utf-8"))
+    return buf.getvalue()
+
+
+@pytest.mark.parametrize("berkas", sorted(FOLDER_CONTOH.glob("*.id")), ids=lambda p: p.name)
+def test_program_contoh_berjalan(berkas, monkeypatch):
+    assert _main_contoh(berkas, monkeypatch, JAWABAN_CONTOH.get(berkas.name, [])).strip()
+
+
+class TestTebakAngka:
+    BERKAS = FOLDER_CONTOH / "tebak_angka.id"
+
+    def test_menang(self, monkeypatch):
+        keluaran = _main_contoh(self.BERKAS, monkeypatch, ["50", "25", "42"])
+        assert "Terlalu besar! Sisa kesempatan: 6" in keluaran
+        assert "Terlalu kecil! Sisa kesempatan: 5" in keluaran
+        assert "Hebat! Angkanya memang 42" in keluaran
+
+    def test_kalah(self, monkeypatch):
+        keluaran = _main_contoh(self.BERKAS, monkeypatch, ["1"] * 7)
+        assert keluaran.count("Terlalu kecil!") == 7
+        assert "Kesempatan habis. Angka rahasianya adalah 42" in keluaran
+
+    def test_jawaban_bukan_angka_tidak_mengurangi_kesempatan(self, monkeypatch):
+        keluaran = _main_contoh(self.BERKAS, monkeypatch, ["empat puluh dua", "42"])
+        assert "Tolong jawab dengan angka." in keluaran
+        assert "Hebat!" in keluaran
+
+
+# ============================================================
+# Pustaka standar
+# ============================================================
+
+class TestPustakaStandar:
+    def test_impor_sebagai(self):
+        assert tangkap_output("impor matematika sebagai m\ntampilkan m.faktorial(4)") == "24"
+
+    def test_bulatkan_seperti_di_sekolah(self):
+        kode = "impor matematika\ntampilkan matematika.bulatkan(2.675, 2), matematika.bulatkan(-2.5), matematika.bulatkan(1234, -2)"
+        assert tangkap_output(kode) == "2.68 -3 1200"
+
+    @pytest.mark.parametrize("kode, pesan", [
+        ("matematika.akar(-1)", "negatif"),
+        ("matematika.faktorial(-1)", "0 atau lebih"),
+        ("matematika.tangen(90)", "tidak terdefinisi"),
+        ("matematika.logaritma(0)", "lebih dari 0"),
+        ("matematika.fpb(4)", "dua bilangan"),
+    ])
+    def test_matematika_kesalahan(self, kode, pesan):
+        with pytest.raises(KesalahanIndonesia, match=pesan):
+            jalankan_kode(f"impor matematika\n{kode}")
+
+    def test_acak_bisa_diulang_dengan_benih(self):
+        kode = "impor acak\nacak.atur_benih(7)\nbuat a adalah angka acak dari 1 sampai 1000\nacak.atur_benih(7)\ntampilkan a adalah angka acak dari 1 sampai 1000"
+        assert tangkap_output(kode) == "benar"
+
+    @pytest.mark.parametrize("kode, pesan", [
+        ("angka acak dari 10 sampai 1", "tidak boleh lebih besar"),
+        ("acak.pilih([])", "kosong"),
+        ("acak.bilangan(1.5, 3)", "bilangan bulat"),
+    ])
+    def test_acak_kesalahan(self, kode, pesan):
+        with pytest.raises(KesalahanIndonesia, match=pesan):
+            jalankan_kode(f"impor acak\n{kode}")
+
+    def test_berkas_tulis_baca(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        kode = (
+            "impor berkas\n"
+            'berkas.tulis("catatan.txt", "baris 1\\n")\n'
+            'berkas.tambahkan("catatan.txt", "baris 2")\n'
+            'tampilkan berkas.baca_baris("catatan.txt"), berkas.ada("catatan.txt")\n'
+            'berkas.hapus("catatan.txt")\n'
+            'tampilkan berkas.ada("catatan.txt")'
+        )
+        assert tangkap_output(kode) == "[baris 1, baris 2] benar\nsalah"
+
+    def test_berkas_tidak_ditemukan(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(KesalahanBerkas, match="tidak ditemukan") as info:
+            jalankan_kode('impor berkas\nberkas.baca("tidak_ada.txt")')
+        assert info.value.baris == 2  # baris pemanggilnya ikut dilaporkan
+
+    def test_waktu_tanggal_indonesia(self, jam_palsu):
+        kode = "impor waktu\ntampilkan hari ini, tanggal hari ini, bulan ini, tahun ini\ntampilkan waktu.tanggal_lengkap()"
+        assert tangkap_output(kode) == "Kamis 1 Januari 2026 Januari 2026\nKamis, 1 Januari 2026"
+
+
+# ============================================================
+# Masukan
+# ============================================================
+
+class TestMasukan:
+    def test_tanya_angka_mengulang_sampai_berupa_angka(self, monkeypatch):
+        jawaban = iter(["dua belas", "3,5"])
+        monkeypatch.setattr("builtins.input", lambda pertanyaan="": next(jawaban))
+        assert tangkap_output('buat x adalah tanya angka "Angka? "\ntampilkan x dikali 2') == "Tolong jawab dengan angka.\n7"
+
+    def test_masukan_angka_bukan_angka(self, monkeypatch):
+        monkeypatch.setattr("builtins.input", lambda pertanyaan="": "abc")
+        with pytest.raises(KesalahanNilai, match="bukan bilangan bulat"):
+            jalankan_kode('masukan_angka("Umur? ")')
+
+    def test_masukan_habis(self, monkeypatch):
+        def habis(pertanyaan=""):
+            raise EOFError
+        monkeypatch.setattr("builtins.input", habis)
+        with pytest.raises(KesalahanNilai, match="masukan"):
+            jalankan_kode('tanya "Nama? "')
+
+    def test_ubah_desimal_koma_indonesia(self):
+        assert eval_kode('ubah_desimal("3,5")') == 3.5
+
+
+# ============================================================
+# Keputusan desain
+# ============================================================
+
+class TestKeputusanDesain:
+    @pytest.mark.parametrize("kode, tampil", [
+        ("tampilkan 10 dibagi 2", "5"),
+        ("tampilkan 7 dibagi 2", "3.5"),
+        ("tampilkan 0.1 ditambah 0.2", "0.3"),
+        ("tampilkan 1 dibagi 3", "0.333333333333"),
+        ("tampilkan -0.0", "0"),
+    ])
+    def test_tampilan_desimal(self, kode, tampil):
+        assert tangkap_output(kode) == tampil
+
+    def test_cetak_tanpa_pindah_baris(self):
+        buf = StringIO()
+        with redirect_stdout(buf):
+            jalankan_kode('cetak "a"\ncetak "b", "c"\ntampilkan "d"')
+        assert buf.getvalue() == "ab cd\n"
+
+    def test_ketika_atau_dengan_nama(self):
+        kode = (
+            "tetap SABTU adalah 6\ntetap MINGGU adalah 7\nbuat hari adalah 7\n"
+            "pilih hari:\n    ketika SABTU atau MINGGU: tampilkan \"libur\"\n    bawaan: tampilkan \"kerja\""
+        )
+        assert tangkap_output(kode) == "libur"
+
+
+# ============================================================
+# Kesalahan yang rapi
+# ============================================================
+
+class TestKesalahanRapi:
+    @pytest.mark.parametrize("kode", [
+        '-"a"',
+        'buat d adalah [1]\nd["x"]',
+        'buat d adalah [1, 2]\nd[0:"a"]',
+        '"abc"[1.5]',
+        'untuk i dari "a" sampai 3: tampilkan i',
+        "mutlak(1, 2)",
+        'jumlah(["a"])',
+        'rentang("a")',
+        'diurutkan([1, "a"])',
+        "5 ada dalam 3",
+        '"a" kurang dari 1',
+        "5()",
+        '{"a": 1}.hapusKunci("b")',
+        "[].hapusPosisi(0)",
+        'buat d adalah [2, "a"]\nd.urutkan()',
+        'tunggu "sebentar"',
+        'bilangan x adalah "abc"',
+        "impor matematika\nmatematika.akar(\"a\")",
+        "impor berkas\nberkas.baca(5)",
+        "impor waktu\nwaktu.tidak_ada()",
+        'buat d adalah [1]\nd.tambah(2)',
+        '"halo".huruf_besar(1)',
+        '"halo".ganti(1, 2)',
+        "fungsi f(a, b):\n    kembalikan a\nf(1)",
+        "kelas A:\n    buat x adalah 1\nA(5)",
+        "ulangi \"tiga\" kali: tampilkan 1",
+        "tampilkan kosong ditambah 1",
+        "impor matematika.pi.x",
+        "tampilkan 0 pangkat -1",
+        "tampilkan 2.0 pangkat 10000",
+        "tampilkan (-8) pangkat 0.5",
+    ])
+    def test_tidak_ada_error_python_mentah(self, kode):
+        """Setiap kesalahan harus berupa kesalahan berbahasa Indonesia, bukan error Python."""
+        with pytest.raises(KesalahanIndonesia):
+            jalankan_kode(kode)
+
+    def test_rekursi_dalam_berhasil(self):
+        kode = "fungsi turun(n):\n    jika n adalah 0, maka kembalikan 0\n    kembalikan turun(n dikurangi 1)\ntampilkan turun(2500)"
+        assert tangkap_output(kode) == "0"
+
+    def test_rekursi_tak_berujung_bisa_ditangkap(self):
+        kode = (
+            "fungsi f(n):\n    kembalikan f(n ditambah 1)\n"
+            "coba:\n    f(1)\ntangkap KesalahanTumpukan:\n    tampilkan \"tertangkap\"\n"
+            "fungsi g(n):\n    jika n adalah 0, maka kembalikan 0\n    kembalikan g(n dikurangi 1)\n"
+            "tampilkan g(2000)"  # kedalaman kembali normal setelah kesalahan
+        )
+        assert tangkap_output(kode) == "tertangkap\n0"
+
+    def test_traceback_rekursi_gagal_tetap_pendek(self):
+        # Traceback puluhan ribu frame membuat Pyodide (editor browser) kehabisan tumpukan saat dibebaskan.
+        with pytest.raises(KesalahanTumpukan) as info:
+            jalankan_kode("fungsi f(n):\n    kembalikan f(n + 1)\nf(0)")
+        tb, panjang = info.value.__traceback__, 0
+        while tb is not None:
+            panjang, tb = panjang + 1, tb.tb_next
+        assert panjang < 100
+
+    def test_konversi_teks_berbahasa_indonesia(self):
+        assert tangkap_output("teks a = benar\nteks b = kosong\nteks c = 2.0\ntampilkan a, b, c") == "benar kosong 2"
+
+    def test_kamus_kosong_bernilai_salah(self):
+        assert tangkap_output("buat k = {}\njika k: tampilkan 1\njika tidak: tampilkan 2") == "2"
+        assert tangkap_output("tampilkan ubah_logika({}), ubah_logika({1: 2})") == "salah benar"
+
+    def test_jenis_metode_adalah_fungsi(self):
+        kode = "kelas A:\n    fungsi f(diri):\n        kembalikan 1\ntampilkan jenis(A().f), jenis([].tambahkan)"
+        assert tangkap_output(kode) == "fungsi fungsi"
+
+    def test_fungsi_bawaan_ditampilkan_rapi(self):
+        assert tangkap_output("tampilkan panjang") == "<fungsi bawaan>"
+
+    def test_kamus_boleh_diubah_saat_ditelusuri(self):
+        kode = "buat k = {1: 1, 2: 2}\nuntuk setiap x dalam k:\n    k[x ditambah 10] = 0\ntampilkan panjang(k)"
+        assert tangkap_output(kode) == "4"
+
+    def test_teks_tidak_bisa_dipakai_dengan_sisa_bagi(self):
+        with pytest.raises(KesalahanTipe):
+            jalankan_kode('tampilkan "nilai %d" % 5')
+
+    def test_bilangan_sangat_panjang_tetap_tampil(self):
+        assert len(tangkap_output("tampilkan 10 pangkat 5000")) == 5001
+
+    def test_pangkat_pecahan_bilangan_negatif(self):
+        with pytest.raises(KesalahanNilai, match="Pangkat pecahan"):
+            jalankan_kode("impor matematika\ntampilkan matematika.pangkat(-8, 0.5)")
+
+    def test_parameter_diri_pada_fungsi_biasa(self):
+        assert tangkap_output("fungsi f(diri):\n    kembalikan diri\ntampilkan f(3)") == "3"
+
+    def test_saran_atribut_objek(self):
+        kode = "kelas A:\n    fungsi inisialisasi():\n        diri.nilai adalah 1\ntampilkan A().nilia"
+        with pytest.raises(KesalahanNama, match="Maksud Anda 'nilai'"):
+            jalankan_kode(kode)

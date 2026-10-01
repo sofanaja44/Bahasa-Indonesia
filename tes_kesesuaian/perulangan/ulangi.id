@@ -1,0 +1,13 @@
+ulangi 3 kali, cetak "hore"
+tampilkan
+buat hitung adalah 3
+ulangi:
+    cetak hitung
+    kurangi hitung dengan 1
+sampai hitung adalah 0
+tampilkan
+buat i adalah 0
+ulangi:
+    tambahkan 1 ke i
+selama i kurang dari 5
+tampilkan i
